@@ -272,6 +272,16 @@ ollama pull gemma3:27b   # Pull a model if needed
 
 MIT — see [LICENSE](LICENSE) for details.
 
+## Built with
+
+This project was built entirely through vibe coding — a collaborative development process between a human and an AI assistant.
+
+- **Specification & design**: Claude Desktop (Chat, Opus 4.6)
+- **Implementation & debugging**: Claude Desktop (Code, Opus 4.6)
+- **Human direction**: Paolo Dalprato — all architectural decisions, UX choices, and strategic direction
+
+No line of code was written manually. Every feature was discussed, iterated, and refined through natural language conversation.
+
 ## Credits
 
 Version 1 — Vibe-coded by [Paolo Dalprato](https://ai-know.pro) and [Claude](https://claude.ai).
