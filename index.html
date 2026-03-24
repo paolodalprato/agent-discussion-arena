@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent Discussion Arena — Multi-Perspective AI Discussion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/marked@15.0.4/marked.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<style>
+/* ============ CSS RESET & BASE ============ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #F8F7F4;
+  --bg-secondary: #F0EFEC;
+  --bg-card: #FFFFFF;
+  --bg-input: #FFFFFF;
+  --border-color: #E8E5DF;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --accent: #E84D35;
+  --accent-bg: rgba(232,77,53,0.06);
+  --accent-border: rgba(232,77,53,0.20);
+  --p1-color: #E84D35;
+  --p1-bg: transparent;
+  --p1-border: #E84D35;
+  --p2-color: #000000;
+  --p2-bg: transparent;
+  --p2-border: #000000;
+  --p3-color: #888888;
+  --p3-bg: transparent;
+  --p3-border: #888888;
+  --p4-color: #C47A20;
+  --p4-bg: transparent;
+  --p4-border: #C47A20;
+  --moderator-color: #E84D35;
+  --moderator-bg: transparent;
+  --moderator-border: #E84D35;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 4px;
+  --max-width: 680px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.65;
+  min-height: 100vh;
+}
+
+/* ============ ANIMATIONS ============ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.fade-up { animation: fadeUp 0.4s ease forwards; }
+
+.loading-dots { display: inline-flex; gap: 5px; align-items: center; padding: 16px 0; }
+.loading-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted);
+  animation: pulse 1.4s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.shimmer-bar {
+  height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, var(--border-color) 25%, var(--accent) 50%, var(--border-color) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ============ LAYOUT ============ */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+/* ============ TYPOGRAPHY ============ */
+h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; }
+h1 { font-size: 2.4rem; }
+h2 { font-size: 1.15rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; font-size: 0.8rem; }
+h3 { font-size: 0.95rem; }
+code, .mono { font-family: var(--font-mono); font-size: 0.85em; }
+
+/* ============ FORM ELEMENTS ============ */
+input, textarea, select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--text-primary);
+}
+textarea { resize: vertical; min-height: 60px; }
+select { cursor: pointer; }
+label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ============ BUTTONS ============ */
+button {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: 10px 20px;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.8; }
+.btn-primary:disabled { opacity: 0.25; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover { border-color: var(--text-primary); }
+.btn-small { padding: 6px 14px; font-size: 0.78rem; }
+.btn-danger { background: transparent; color: #d45b5b; border: 1px solid rgba(212,91,91,0.3); }
+.btn-danger:hover { background: rgba(212,91,91,0.06); }
+
+/* ============ CARDS ============ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.section { margin-bottom: 40px; }
+.section-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.section-number {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem; font-weight: 700;
+}
+
+/* ============ PARTICIPANT CARD ============ */
+.participant-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+}
+
+/* ============ DEBATE VIEW ============ */
+.phase-header {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-parallel { background: #F5F5F5; color: var(--text-secondary); }
+.badge-sequential { background: #F5F5F5; color: var(--text-secondary); }
+
+.response-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  animation: fadeUp 0.4s ease forwards;
+}
+.response-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px; font-weight: 700;
+  font-size: 0.82rem;
+}
+.color-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.response-text { font-size: 0.88rem; line-height: 1.7; color: #333; }
+.response-text h1 { font-size: 1.1rem; font-weight: 700; margin: 12px 0 6px; color: var(--text-primary); }
+.response-text h2 { font-size: 1rem; font-weight: 700; margin: 10px 0 4px; color: var(--text-primary); }
+.response-text h3 { font-size: 0.92rem; font-weight: 600; margin: 8px 0 4px; color: var(--text-primary); }
+.response-text p { margin: 0 0 8px; }
+.response-text p:last-child { margin-bottom: 0; }
+.response-text ul, .response-text ol { margin: 4px 0 8px 20px; }
+.response-text li { margin-bottom: 2px; }
+.response-text strong { font-weight: 700; color: var(--text-primary); }
+.response-text em { font-style: italic; }
+.response-text blockquote {
+  border-left: none;
+  padding-left: 0; margin: 8px 0;
+  color: inherit; font-style: normal;
+}
+.response-text code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--bg-secondary); padding: 1px 4px; border-radius: 2px; }
+
+/* ============ TOKEN COUNTER ============ */
+.token-bar {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+.token-bar span { white-space: nowrap; }
+.token-bar strong { color: var(--text-primary); }
+
+/* ============ SUMMARY PANEL ============ */
+.summary-panel {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-top: 32px;
+}
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.summary-item { text-align: center; }
+.summary-value { font-family: var(--font-mono); font-size: 1.4rem; color: var(--text-primary); font-weight: 700; }
+.summary-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+.lang-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 100;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 3px;
+  display: flex; gap: 2px;
+}
+.lang-btn {
+  padding: 3px 10px; border-radius: 2px;
+  font-size: 0.72rem; font-weight: 700;
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; border: none;
+  font-family: var(--font-mono);
+}
+.lang-btn.active { background: var(--text-primary); color: var(--bg-primary); }
+
+/* ============ DEMO BANNER ============ */
+.demo-banner {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+.demo-banner p { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 14px; }
+.demo-banner .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ============ WARNING ============ */
+.warning-box {
+  border: 1px solid rgba(232,77,53,0.25);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* ============ MISC ============ */
+.flex-row { display: flex; gap: 10px; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.text-gold { color: var(--accent); }
+.text-sm { font-size: 0.82rem; }
+.text-xs { font-size: 0.72rem; }
+.grow { flex: 1; }
+.hidden { display: none; }
+
+.password-wrapper { position: relative; }
+.password-wrapper input { padding-right: 44px; }
+.password-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 0.82rem; padding: 4px 8px;
+}
+
+.slider-container { display: flex; align-items: center; gap: 12px; }
+.slider-container input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 2px; background: var(--border-color);
+  border-radius: 1px; border: none; padding: 0; flex: 1;
+}
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text-primary); cursor: pointer;
+}
+.slider-value {
+  font-family: var(--font-mono);
+  font-size: 1rem; font-weight: 700;
+  color: var(--text-primary); min-width: 24px; text-align: center;
+}
+
+.status-indicator {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.status-dot.ok { background: #2D9D5C; }
+.status-dot.fail { background: #d45b5b; }
+.status-dot.pending { background: var(--text-muted); }
+
+.credits {
+  text-align: center; padding: 40px 0 16px;
+  font-size: 0.75rem; color: var(--text-muted);
+}
+.credits a { color: var(--text-primary); text-decoration: none; }
+.credits a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  h1 { font-size: 1.8rem; }
+  .summary-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+// ============ TRANSLATIONS ============
+const T = {
+  en: {
+    title: "Agent Discussion Arena",
+    subtitle: "Multi-Perspective AI Discussion",
+    demoBannerText: "This is a pre-recorded demo. To run live discussions with AI models, clone the repository and start the local proxy server.",
+    playDemo: "Play Demo",
+    viewOnGithub: "View on GitHub",
+    providerSection: "AI Provider",
+    provider: "Provider",
+    apiKey: "API Key",
+    model: "Model",
+    baseUrl: "Base URL",
+    fetchModels: "Fetch models",
+    testConnection: "Test connection",
+    connected: "Connected",
+    failed: "Failed",
+    testing: "Testing...",
+    debateSetup: "Discussion Setup",
+    topic: "Topic",
+    topicPlaceholder: "Enter the debate topic...",
+    attachDocument: "Attach a document",
+    attachDocumentDesc: "Optional. Participants will use it as context (PDF, TXT, MD, CSV, image).",
+    documentAttached: "Document attached",
+    removeDocument: "Remove",
+    documentTooLarge: "File too large (max 500 KB for text, 5 MB for images)",
+    participants: "Participants",
+    name: "Name",
+    namePlaceholder: "Participant name",
+    perspective: "Perspective / Personality",
+    perspectivePlaceholder: "Describe the point of view, background, expertise...",
+    addParticipant: "Add participant",
+    removeParticipant: "Remove",
+    moderator: "Moderator",
+    moderatorNamePlaceholder: "Moderator name",
+    moderatorPerspectivePlaceholder: "Describe the moderator's approach...",
+    rounds: "Discussion rounds",
+    launch: "Launch",
+    estimatedCalls: "Estimated API calls",
+    startDebate: "Start Discussion",
+    newDebate: "New Discussion",
+    backToSetup: "Back to Setup",
+    opening: "Opening Statements",
+    round: "Round",
+    verdict: "Verdict",
+    parallel: "Parallel",
+    sequential: "Sequential",
+    debateOn: "Discussion on",
+    statusRunning: "Discussion in progress...",
+    statusVerdict: "Generating verdict...",
+    statusComplete: "Discussion complete",
+    inputTokens: "Input",
+    outputTokens: "Output",
+    totalTokens: "Total",
+    introTitle: "Introduction",
+    openingTitle: "Opening Statements",
+    verdictTitle: "Verdict",
+    summaryTitle: "Discussion Summary",
+    downloadDiscussion: "Download (.md)",
+    totalCalls: "API Calls",
+    totalPhases: "Phases",
+    parallelPhases: "Parallel Phases",
+    totalTime: "Total Time",
+    seconds: "s",
+    proxyWarning: "Proxy server not reachable. Start it with: python proxy-server.py",
+    langInstruction: "Respond in English.",
+    credits: "Vibe-coded by",
+    creditsAnd: "and",
+    version: "Version 1",
+    show: "Show",
+    hide: "Hide",
+    optional: "optional",
+    apiKeyOptional: "Optional",
+    modelPlaceholder: "Select or type a model name",
+    modelPlaceholderLocal: "Select or type a model name",
+  },
+  it: {
+    title: "Agent Discussion Arena",
+    subtitle: "Discussione AI Multi-Prospettiva",
+    demoBannerText: "Questa \u00e8 una demo pre-registrata. Per avviare discussioni dal vivo con modelli AI, clona il repository e avvia il proxy server locale.",
+    playDemo: "Avvia Demo",
+    viewOnGithub: "Vedi su GitHub",
+    providerSection: "Provider AI",
+    provider: "Provider",
+    apiKey: "Chiave API",
+    model: "Modello",
+    baseUrl: "URL Base",
+    fetchModels: "Carica modelli",
+    testConnection: "Testa connessione",
+    connected: "Connesso",
+    failed: "Fallito",
+    testing: "Test in corso...",
+    debateSetup: "Configurazione Discussione",
+    topic: "Argomento",
+    topicPlaceholder: "Inserisci l'argomento del debate...",
+    attachDocument: "Allega un documento",
+    attachDocumentDesc: "Opzionale. I partecipanti lo useranno come contesto (PDF, TXT, MD, CSV, immagine).",
+    documentAttached: "Documento allegato",
+    removeDocument: "Rimuovi",
+    documentTooLarge: "File troppo grande (max 500 KB per testo, 5 MB per immagini)",
+    participants: "Partecipanti",
+    name: "Nome",
+    namePlaceholder: "Nome partecipante",
+    perspective: "Prospettiva / Personalit\u00e0",
+    perspectivePlaceholder: "Descrivi il punto di vista, background, competenze...",
+    addParticipant: "Aggiungi partecipante",
+    removeParticipant: "Rimuovi",
+    moderator: "Moderatore",
+    moderatorNamePlaceholder: "Nome moderatore",
+    moderatorPerspectivePlaceholder: "Descrivi l'approccio del moderatore...",
+    rounds: "Round di discussione",
+    launch: "Avvio",
+    estimatedCalls: "Chiamate API stimate",
+    startDebate: "Avvia Discussione",
+    newDebate: "Nuova Discussione",
+    backToSetup: "Torna alla Configurazione",
+    opening: "Dichiarazioni di Apertura",
+    round: "Round",
+    verdict: "Verdetto",
+    parallel: "Parallelo",
+    sequential: "Sequenziale",
+    debateOn: "Discussione su",
+    statusRunning: "Discussione in corso...",
+    statusVerdict: "Generazione verdetto...",
+    statusComplete: "Discussione completata",
+    inputTokens: "Input",
+    outputTokens: "Output",
+    totalTokens: "Totale",
+    introTitle: "Introduzione",
+    openingTitle: "Dichiarazioni di Apertura",
+    verdictTitle: "Verdetto",
+    summaryTitle: "Riepilogo Discussione",
+    downloadDiscussion: "Scarica (.md)",
+    totalCalls: "Chiamate API",
+    totalPhases: "Fasi",
+    parallelPhases: "Fasi Parallele",
+    totalTime: "Tempo Totale",
+    seconds: "s",
+    proxyWarning: "Proxy server non raggiungibile. Avvialo con: python proxy-server.py",
+    langInstruction: "Rispondi in italiano.",
+    credits: "Vibe-coded da",
+    creditsAnd: "e",
+    version: "Versione 1",
+    show: "Mostra",
+    hide: "Nascondi",
+    optional: "opzionale",
+    apiKeyOptional: "Opzionale",
+    modelPlaceholder: "Seleziona o digita un modello",
+    modelPlaceholderLocal: "Seleziona o digita un modello",
+  },
+};
+
+// ============ PARTICIPANT COLORS ============
+const COLORS = [
+  { color: 'var(--p1-color)', bg: 'var(--p1-bg)', border: 'var(--p1-border)' },
+  { color: 'var(--p2-color)', bg: 'var(--p2-bg)', border: 'var(--p2-border)' },
+  { color: 'var(--p3-color)', bg: 'var(--p3-bg)', border: 'var(--p3-border)' },
+  { color: 'var(--p4-color)', bg: 'var(--p4-bg)', border: 'var(--p4-border)' },
+];
+const MOD_STYLE = { color: 'var(--moderator-color)', bg: 'var(--moderator-bg)', border: 'var(--moderator-border)' };
+
+// ============ DEMO DATA ============
+const DEMO_DATA = {
+  topic: "Will generative AI make programmers obsolete within 10 years?",
+  participants: [
+    {
+      name: "Alex Rivera",
+      perspective: "Senior Software Developer with 15 years of experience. Pragmatic, evidence-based thinker who has seen many technology hype cycles come and go.",
+    },
+    {
+      name: "Jordan Chen",
+      perspective: "Tech Startup CEO who has built multiple AI-powered products. Business-oriented, focused on efficiency gains and market disruption.",
+    },
+    {
+      name: "Dr. Maria Santos",
+      perspective: "Computer Science Professor specializing in software engineering and AI. Brings historical perspective on how technology has transformed — but never eliminated — programming roles.",
+    },
+  ],
+  moderator: {
+    name: "The Moderator",
+    perspective: "Impartial analyst focused on evaluating argument quality, identifying logical fallacies, and delivering balanced assessments.",
+  },
+  rounds: 1,
+  phases: [
+    {
+      name: "Opening Statements",
+      type: "parallel",
+      time: 4.2,
+      responses: [
+        {
+          name: "Alex Rivera",
+          text: "As someone who writes production code daily, I can tell you: generative AI is a powerful assistant, not a replacement. Here are my key points.\n\nFirst, AI excels at boilerplate and pattern-matching tasks, but software engineering is fundamentally about understanding complex business domains, making architectural trade-offs, and debugging systems where the failure mode has never been seen before. I use Copilot every day — it saves me maybe 20-30% of typing time, but it hasn't reduced the thinking time at all.\n\nSecond, the \"last mile\" problem in software is enormous. Getting code from 90% correct to production-ready involves security audits, edge case handling, performance optimization under real load, and integration with legacy systems that have undocumented behaviors. AI-generated code often looks right but fails in subtle ways that only experienced engineers catch.\n\nThird, the demand for software is essentially infinite. Even if AI makes individual developers 3x more productive, companies will simply build 3x more software. We've seen this pattern with every productivity tool since the compiler. The role evolves, but the need for human judgment in building reliable systems remains."
+        },
+        {
+          name: "Jordan Chen",
+          text: "From a business perspective, the trajectory is unmistakable: AI is not just assisting programmers — it's fundamentally restructuring how software gets built.\n\nFirst, consider the economics. A senior developer costs $150-250K per year. AI coding tools already handle routine tasks at near-zero marginal cost. Within five years, agentic AI systems will handle entire feature development cycles — from requirements to deployment — with minimal human oversight. The business case for replacing most programming roles is overwhelming.\n\nSecond, the pace of improvement is exponential. GPT-4 is dramatically better than GPT-3 at coding tasks. Each generation closes more of the gap. We're not extrapolating linearly — we're watching compound improvement in the core capability that defines programming.\n\nThird, my own company has already reduced its engineering team by 40% while shipping faster. We use AI for code generation, testing, documentation, and code review. The remaining engineers are essentially AI supervisors. Within a decade, even that supervisory role will shrink as AI systems become more reliable and autonomous. The question isn't whether this will happen — it's whether the transition will be managed humanely."
+        },
+        {
+          name: "Dr. Maria Santos",
+          text: "History teaches us to be skeptical of \"this time is different\" narratives, even when the technology is genuinely transformative.\n\nFirst, we've been here before — repeatedly. COBOL was supposed to let business managers program directly. Fourth-generation languages promised to eliminate coding. Visual programming, no-code platforms, each wave was heralded as the end of programmers. Yet there are more software developers today than at any point in history. The reason is Jevons Paradox: when you make something cheaper to produce, demand increases to more than compensate.\n\nSecond, programming has never been primarily about writing code. It's about problem decomposition, system design, stakeholder communication, and managing complexity. These are cognitive skills that current AI architectures — which are sophisticated pattern matchers, not reasoners — cannot replicate. AI can generate plausible code, but it cannot understand why a particular design decision matters for maintainability five years from now.\n\nThird, the empirical evidence doesn't support the obsolescence thesis. Studies from MIT and Stanford show AI coding tools improve productivity by 25-55% for specific tasks, not the order-of-magnitude improvement needed for obsolescence. The role will evolve — less syntax, more architecture and AI orchestration — but the fundamental need for human software engineers will persist well beyond a decade."
+        },
+      ],
+    },
+    {
+      name: "Round 1",
+      type: "parallel",
+      time: 5.1,
+      responses: [
+        {
+          name: "Alex Rivera",
+          text: "Jordan, your 40% team reduction is a real data point, but I'd push back on the interpretation. Early adopters often see dramatic gains because they're automating the easiest tasks first. The remaining 60% of your team is handling the hard problems — and those problems don't get easier with scale.\n\nI've seen this pattern at three companies now: teams shrink initially, then grow again as the AI-generated code creates a maintenance burden. Who debugs the AI's architectural decisions when they create subtle performance bottlenecks? Who refactors the AI-generated spaghetti when requirements change?\n\nDr. Santos makes the crucial point about Jevons Paradox. At my company, our AI tools let us ship features faster — so product management tripled the roadmap. We're hiring more engineers, not fewer. The productivity gain was immediately consumed by expanded ambition.\n\nThe \"exponential improvement\" argument assumes continued scaling, but we're already seeing diminishing returns on model size. The jump from GPT-3 to GPT-4 was dramatic; the improvements since then have been incremental. Real-world software engineering requires reliability, not occasional brilliance."
+        },
+        {
+          name: "Jordan Chen",
+          text: "Alex, your \"maintenance burden\" argument actually supports my case. If AI-generated code needs human maintenance, the solution is better AI — and that's exactly what's being built. Agentic systems that can debug, refactor, and test their own code are already in development.\n\nDr. Santos, I respect the historical parallels, but they have a critical flaw: previous automation tools didn't have general intelligence. COBOL and visual programming were rigid tools. LLMs can understand natural language requirements, reason about architecture, and learn from feedback. That's categorically different.\n\nThe Jevons Paradox argument also has limits. Yes, demand for software will increase, but at some point AI can meet that demand autonomously. We don't have more blacksmiths because car demand grew — we have factories. Programming is heading toward the same industrialization.\n\nOn the \"diminishing returns\" point: we're seeing improvements in reasoning, tool use, and autonomy that aren't captured by benchmark scores. The agent paradigm — AI systems that plan, execute, and iterate — is where the real disruption will come. Give it five years."
+        },
+        {
+          name: "Dr. Maria Santos",
+          text: "Jordan, the comparison to blacksmiths reveals the weakness in your argument. Blacksmithing was replaced because the output — shaped metal — could be produced mechanically. Software is not a physical artifact; it's crystallized human intent. Every non-trivial software system embodies countless decisions about trade-offs that require understanding the business, the users, and the constraints.\n\nThe \"agentic AI\" argument is currently speculative. We have demos and prototypes, not production-grade systems managing complex codebases autonomously. The gap between generating a function and maintaining a million-line system with 200 microservices is enormous — and the latter is what real software engineering looks like.\n\nAlex raises an excellent point about Jevons Paradox in practice. I'd add another dimension: as AI handles more routine coding, the remaining human work becomes higher-value and harder to automate. We're not climbing a linear ladder to full automation — we're peeling an onion where each layer reveals more complexity.\n\nThe 25-55% productivity gains from current tools are significant and real. But they're augmentation gains, not replacement gains. The most likely ten-year outcome is programmers who are dramatically more productive with AI, not programmers who are replaced by it."
+        },
+      ],
+    },
+    {
+      name: "Verdict",
+      type: "sequential",
+      time: 3.8,
+      responses: [
+        {
+          name: "The Moderator",
+          text: "After careful analysis of this debate, here is my assessment.\n\n**Argument Quality:**\n\nAlex Rivera presented the strongest empirically-grounded case. The distinction between typing speed and thinking time, the \"last mile\" problem, and the real-world observation of Jevons Paradox in action were compelling and well-supported. The weakest element was relying somewhat heavily on personal experience rather than systematic data.\n\nJordan Chen made a provocative economic case backed by their own company's experience. The 40% team reduction is a powerful data point. However, the argument suffered from several logical leaps: assuming exponential improvement will continue indefinitely, comparing software development to blacksmithing (a false analogy since the outputs are fundamentally different), and projecting from early-adopter experience to industry-wide transformation.\n\nDr. Maria Santos delivered the most intellectually rigorous contribution, effectively deploying Jevons Paradox, historical precedent, and the distinction between augmentation and replacement. The reference to peer-reviewed research (MIT and Stanford studies) strengthened the academic credibility.\n\n**Verdict:**\n\nThe weight of evidence favors the position that programmers will not become obsolete within 10 years. The augmentation thesis — that AI will transform the role while increasing its value — is better supported than the replacement thesis. Jordan's economic arguments highlight real disruption in entry-level and routine tasks, but the claimed trajectory toward full autonomous software development remains speculative.\n\n**Winner on points:** Dr. Maria Santos, followed closely by Alex Rivera. Jordan Chen's argument was the most provocative but the least supported by current evidence."
+        },
+      ],
+    },
+  ],
+};
+
+// ============ PROXY URL ============
+const PROXY_BASE = "http://localhost:8080";
+const GITHUB_URL = "https://github.com/paolodalprato/agent-discussion-arena";
+
+// ============ HELPER: isDemo ============
+function isDemoMode() {
+  const h = window.location.hostname;
+  return h !== "localhost" && h !== "127.0.0.1" && h !== "";
+}
+
+// ============ REACT COMPONENTS ============
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ============ LANGUAGE TOGGLE ============
+function LanguageToggle({ lang, setLang }) {
+  return (
+    <div className="lang-toggle">
+      <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
+      <button className={`lang-btn ${lang === 'it' ? 'active' : ''}`} onClick={() => setLang('it')}>IT</button>
+    </div>
+  );
+}
+
+// ============ LOADING DOTS ============
+function LoadingDots() {
+  return <div className="loading-dots"><span /><span /><span /></div>;
+}
+
+// ============ PROVIDER CONFIG ============
+function ProviderConfig({ config, setConfig, lang }) {
+  const t = T[lang];
+  const [showKey, setShowKey] = useState(false);
+  const [models, setModels] = useState([]);
+  const [testStatus, setTestStatus] = useState(null); // null | 'testing' | 'ok' | 'fail'
+
+  const fetchModels = async () => {
+    try {
+      const params = new URLSearchParams({ provider: config.provider });
+      if (config.apiKey) params.append("api_key", config.apiKey);
+      if (config.baseUrl) params.append("base_url", config.baseUrl);
+      const res = await fetch(`${PROXY_BASE}/api/models?${params}`);
+      const data = await res.json();
+      if (data.models) setModels(data.models);
+    } catch (e) {
+      console.error("Failed to fetch models:", e);
+    }
+  };
+
+  const testConnection = async () => {
+    setTestStatus('testing');
+    try {
+      const res = await fetch(`${PROXY_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: config.provider,
+          api_key: config.apiKey,
+          model: config.model,
+          system: "Reply with OK.",
+          messages: [{ role: "user", content: "Say OK" }],
+          ...(config.provider === 'openai-compatible' ? { base_url: config.baseUrl } : {}),
+        }),
+      });
+      const data = await res.json();
+      setTestStatus(data.error ? 'fail' : 'ok');
+    } catch {
+      setTestStatus('fail');
+    }
+  };
+
+  const datalistId = "model-suggestions";
+
+  const keyPlaceholder = config.provider === 'anthropic' ? 'sk-ant-...'
+    : config.provider === 'openai' ? 'sk-...'
+    : t.apiKeyOptional || 'Optional';
+  const modelPlaceholder = config.provider === 'openai-compatible'
+    ? t.modelPlaceholderLocal || 'Select or type a model name'
+    : t.modelPlaceholder || 'Select or type a model name';
+
+  return (
+    <div className="section">
+      <div className="section-header">
+        <div className="section-number">1</div>
+        <h2>{t.providerSection}</h2>
+      </div>
+      <div className="card">
+        <div className="mb-16">
+          <label>{t.provider}</label>
+          <select value={config.provider} onChange={e => setConfig({ ...config, provider: e.target.value, model: '' })}>
+            <option value="anthropic">Anthropic</option>
+            <option value="openai">OpenAI</option>
+            <option value="openai-compatible">OpenAI-Compatible (Ollama, LM Studio...)</option>
+          </select>
+        </div>
+
+        <div className="mb-16">
+          <label>{t.apiKey}{config.provider === 'openai-compatible' ? ` (${t.optional || 'optional'})` : ''}</label>
+          <div className="password-wrapper">
+            <input
+              type={showKey ? "text" : "password"}
+              value={config.apiKey}
+              onChange={e => setConfig({ ...config, apiKey: e.target.value })}
+              placeholder={keyPlaceholder}
+            />
+            <button className="password-toggle" onClick={() => setShowKey(!showKey)}>
+              {showKey ? t.hide : t.show}
+            </button>
+          </div>
+        </div>
+
+        {config.provider === 'openai-compatible' && (
+          <div className="mb-16">
+            <label>{t.baseUrl}</label>
+            <input
+              type="text"
+              value={config.baseUrl}
+              onChange={e => setConfig({ ...config, baseUrl: e.target.value })}
+              placeholder="e.g. http://localhost:11434"
+            />
+          </div>
+        )}
+
+        <div className="mb-16">
+          <label>{t.model}</label>
+          <div className="flex-row">
+            <div className="grow">
+              <input
+                type="text"
+                list={datalistId}
+                value={config.model}
+                onChange={e => setConfig({ ...config, model: e.target.value })}
+                placeholder={modelPlaceholder}
+              />
+              <datalist id={datalistId}>
+                {models.map(m => <option key={m} value={m} />)}
+              </datalist>
+            </div>
+            <button className="btn-secondary btn-small" onClick={fetchModels}>{t.fetchModels}</button>
+          </div>
+        </div>
+
+        <div className="flex-row">
+          <button className="btn-secondary btn-small" onClick={testConnection} disabled={!config.model || (config.provider !== 'openai-compatible' && !config.apiKey)}>
+            {testStatus === 'testing' ? t.testing : t.testConnection}
+          </button>
+          {testStatus === 'ok' && <span className="status-indicator"><span className="status-dot ok" /> {t.connected}</span>}
+          {testStatus === 'fail' && <span className="status-indicator"><span className="status-dot fail" /> {t.failed}</span>}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ============ FILE READER ============
+const TEXT_EXTENSIONS = ['txt', 'md', 'csv', 'json', 'xml', 'html', 'log', 'tsv'];
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_TEXT_SIZE = 500 * 1024; // 500 KB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+async function readUploadedFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isImage = IMAGE_TYPES.includes(file.type);
+  const isPdf = ext === 'pdf' || file.type === 'application/pdf';
+  const isText = TEXT_EXTENSIONS.includes(ext) || file.type.startsWith('text/');
+
+  if (isImage) {
+    if (file.size > MAX_IMAGE_SIZE) throw new Error('TOO_LARGE');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        name: file.name,
+        type: 'image',
+        mimeType: file.type,
+        content: reader.result, // data:image/...;base64,...
+      });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (isPdf) {
+    if (file.size > MAX_TEXT_SIZE) throw new Error('TOO_LARGE');
+    const arrayBuf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n\n';
+    }
+    return { name: file.name, type: 'text', mimeType: 'application/pdf', content: text.trim() };
+  }
+
+  if (isText) {
+    if (file.size > MAX_TEXT_SIZE) throw new Error('TOO_LARGE');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        name: file.name,
+        type: 'text',
+        mimeType: file.type || 'text/plain',
+        content: reader.result,
+      });
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
+  throw new Error('UNSUPPORTED');
+}
+
+// ============ DEBATE SETUP ============
+function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
+  const t = T[lang];
+
+  const updateParticipant = (index, field, value) => {
+    const p = [...setup.participants];
+    p[index] = { ...p[index], [field]: value };
+    setSetup({ ...setup, participants: p });
+  };
+
+  const addParticipant = () => {
+    if (setup.participants.length < 4) {
+      setSetup({ ...setup, participants: [...setup.participants, { name: '', perspective: '' }] });
+    }
+  };
+
+  const removeParticipant = (index) => {
+    if (setup.participants.length > 2) {
+      setSetup({ ...setup, participants: setup.participants.filter((_, i) => i !== index) });
+    }
+  };
+
+  return (
+    <div className="section">
+      <div className="section-header">
+        <div className="section-number">2</div>
+        <h2>{t.debateSetup}</h2>
+      </div>
+
+      <div className="card mb-16">
+        <label>{t.topic}</label>
+        <textarea
+          value={setup.topic}
+          onChange={e => setSetup({ ...setup, topic: e.target.value })}
+          placeholder={t.topicPlaceholder}
+          rows={2}
+        />
+        <div style={{ marginTop: '12px' }}>
+          {!attachedDoc ? (
+            <div>
+              <label className="btn-secondary btn-small" style={{ cursor: 'pointer', display: 'inline-block' }}>
+                + {t.attachDocument}
+                <input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.log,.tsv,.pdf,.jpg,.jpeg,.png,.gif,.webp" style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const doc = await readUploadedFile(file);
+                      setAttachedDoc(doc);
+                    } catch (err) {
+                      if (err.message === 'TOO_LARGE') alert(t.documentTooLarge);
+                      else alert('Unsupported file type');
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              <span className="text-muted text-xs" style={{ marginLeft: '8px' }}>{t.attachDocumentDesc}</span>
+            </div>
+          ) : (
+            <div className="flex-row gap-8" style={{ alignItems: 'center' }}>
+              <span className="text-xs">{t.documentAttached}: <strong>{attachedDoc.name}</strong> ({attachedDoc.type === 'image' ? 'image' : `${(attachedDoc.content.length / 1024).toFixed(0)} KB text`})</span>
+              <button className="btn-secondary btn-small" onClick={() => setAttachedDoc(null)}>{t.removeDocument}</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <h3 className="mb-8">{t.participants}</h3>
+      {setup.participants.map((p, i) => (
+        <div key={i} className="participant-card" style={{ borderLeftColor: COLORS[i]?.color || 'var(--border-color)' }}>
+          <div className="flex-between mb-8">
+            <div className="flex-row gap-8">
+              <span className="color-dot" style={{ background: COLORS[i]?.color }} />
+              <label style={{ margin: 0 }}>{t.name}</label>
+            </div>
+            {setup.participants.length > 2 && (
+              <button className="btn-danger btn-small" onClick={() => removeParticipant(i)}>{t.removeParticipant}</button>
+            )}
+          </div>
+          <input
+            className="mb-8"
+            value={p.name}
+            onChange={e => updateParticipant(i, 'name', e.target.value)}
+            placeholder={t.namePlaceholder}
+          />
+          <label>{t.perspective}</label>
+          <textarea
+            value={p.perspective}
+            onChange={e => updateParticipant(i, 'perspective', e.target.value)}
+            placeholder={t.perspectivePlaceholder}
+            rows={2}
+          />
+        </div>
+      ))}
+      {setup.participants.length < 4 && (
+        <button className="btn-secondary btn-small mt-8 mb-16" onClick={addParticipant}>+ {t.addParticipant}</button>
+      )}
+
+      <h3 className="mb-8" style={{ color: 'var(--accent)' }}>{t.moderator}</h3>
+      <div className="participant-card" style={{ borderLeftColor: 'var(--moderator-color)' }}>
+        <div className="flex-row gap-8 mb-8">
+          <span className="color-dot" style={{ background: 'var(--moderator-color)' }} />
+          <label style={{ margin: 0 }}>{t.name}</label>
+        </div>
+        <input
+          className="mb-8"
+          value={setup.moderator.name}
+          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, name: e.target.value } })}
+          placeholder={t.moderatorNamePlaceholder}
+        />
+        <label>{t.perspective}</label>
+        <textarea
+          value={setup.moderator.perspective}
+          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, perspective: e.target.value } })}
+          placeholder={t.moderatorPerspectivePlaceholder}
+          rows={2}
+        />
+      </div>
+
+      <div className="card mt-16">
+        <label>{t.rounds}</label>
+        <div className="slider-container">
+          <input
+            type="range" min="1" max="5" value={setup.rounds}
+            onChange={e => setSetup({ ...setup, rounds: parseInt(e.target.value) })}
+          />
+          <span className="slider-value">{setup.rounds}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============ LAUNCH SECTION ============
+function LaunchSection({ setup, config, onStart, lang }) {
+  const t = T[lang];
+  const n = setup.participants.length;
+  const calls = n + (n * setup.rounds) + 1;
+
+  const canStart = setup.topic.trim()
+    && setup.participants.every(p => p.name.trim() && p.perspective.trim())
+    && setup.moderator.name.trim()
+    && setup.moderator.perspective.trim()
+    && config.model.trim()
+    && (config.provider === 'openai-compatible' || config.apiKey.trim());
+
+  return (
+    <div className="section">
+      <div className="section-header">
+        <div className="section-number">3</div>
+        <h2>{t.launch}</h2>
+      </div>
+      <div className="card text-center">
+        <p className="mono text-secondary mb-16">{t.estimatedCalls}: <strong className="text-gold">{calls}</strong></p>
+        <button className="btn-primary" disabled={!canStart} onClick={onStart} style={{ padding: '14px 48px', fontSize: '1rem' }}>
+          {t.startDebate}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============ DOWNLOAD DISCUSSION ============
+function downloadDiscussion(setup, phases, tokens, totalTime, totalCalls, config, attachedDoc, t) {
+  const topic = setup?.topic || 'discussion';
+  const lines = [];
+  lines.push(`# ${topic}\n`);
+  const providerLabel = config?.provider === 'openai-compatible' ? `OpenAI-Compatible (${config?.baseUrl || ''})` : (config?.provider || 'unknown');
+  lines.push(`*Generated with Agent Discussion Arena — ai-know.pro*`);
+  lines.push(`*Provider: ${providerLabel} | Model: ${config?.model || 'unknown'}*\n`);
+
+  // Participants summary
+  const participants = setup?.participants || [];
+  if (participants.length) {
+    lines.push(`## Participants\n`);
+    participants.forEach(p => {
+      lines.push(`- **${p.name}** — ${p.perspective}`);
+    });
+    lines.push('');
+  }
+  if (setup?.moderator) {
+    lines.push(`**Moderator:** ${setup.moderator.name} — ${setup.moderator.perspective}\n`);
+  }
+  if (attachedDoc) {
+    lines.push(`**Reference document:** ${attachedDoc.name} (${attachedDoc.type})\n`);
+  }
+
+  lines.push('---\n');
+
+  // Phases
+  phases.forEach(phase => {
+    const label = phase.name;
+    lines.push(`## ${label}\n`);
+    phase.responses.forEach((resp, ri) => {
+      if (ri % 2 === 1) {
+        // Indent odd responses as blockquotes for visual staggering
+        lines.push(`> ### ${resp.name}\n>`);
+        lines.push((resp.text || '').split('\n').map(l => `> ${l}`).join('\n'));
+        lines.push('');
+      } else {
+        lines.push(`### ${resp.name}\n`);
+        lines.push(resp.text || '');
+        lines.push('');
+      }
+    });
+  });
+
+  // Stats
+  lines.push('---\n');
+  lines.push(`## Stats\n`);
+  lines.push(`- Provider: ${providerLabel}`);
+  lines.push(`- Model: ${config?.model || 'unknown'}`);
+  lines.push(`- API Calls: ${totalCalls}`);
+  lines.push(`- Phases: ${phases.length}`);
+  lines.push(`- Input tokens: ${tokens.input.toLocaleString()}`);
+  lines.push(`- Output tokens: ${tokens.output.toLocaleString()}`);
+  lines.push(`- Total tokens: ${(tokens.input + tokens.output).toLocaleString()}`);
+  lines.push(`- Time: ${totalTime.toFixed(1)}s`);
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `discussion-${slug}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============ DEBATE VIEW ============
+function DebateView({ phases, currentPhaseIndex, status, tokens, totalTime, setup, config, attachedDoc, lang, isDemo }) {
+  const t = T[lang];
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [phases, currentPhaseIndex, status]);
+
+  const getParticipantStyle = (name) => {
+    if (name === (setup?.moderator?.name || DEMO_DATA.moderator.name)) return MOD_STYLE;
+    const participants = setup?.participants || DEMO_DATA.participants;
+    const idx = participants.findIndex(p => p.name === name);
+    return COLORS[idx] || COLORS[0];
+  };
+
+  const isComplete = status === 'complete';
+  const allPhases = phases || [];
+  const pCount = (setup?.participants || DEMO_DATA.participants).length;
+  const rounds = setup?.rounds || DEMO_DATA.rounds;
+  // intro(1) + openings(pCount parallel) + rounds(pCount sequential each) + verdict(1)
+  const totalCalls = 1 + pCount + (pCount * rounds) + 1;
+  const parallelPhaseCount = 1 + rounds; // opening + rounds
+
+  return (
+    <div>
+      <h2 className="text-center mb-8">{t.debateOn}:</h2>
+      <p className="text-center mb-16" style={{ fontSize: '1.1rem', fontStyle: 'italic' }}>
+        "{setup?.topic || DEMO_DATA.topic}"
+      </p>
+
+      {!isComplete && (
+        <div className="mb-16">
+          <div className="shimmer-bar" />
+          <p className="text-center text-sm text-muted mt-8">
+            {status === 'verdict' ? t.statusVerdict : t.statusRunning}
+          </p>
+        </div>
+      )}
+
+      <div className="token-bar">
+        <span>{t.inputTokens}: <strong>{tokens.input.toLocaleString()}</strong></span>
+        <span>{t.outputTokens}: <strong>{tokens.output.toLocaleString()}</strong></span>
+        <span>{t.totalTokens}: <strong>{(tokens.input + tokens.output).toLocaleString()}</strong></span>
+      </div>
+
+      {allPhases.map((phase, pi) => {
+        const phaseLabel = phase.name.startsWith("Round") ? `${t.round} ${phase.name.split(" ")[1]}` :
+                           phase.name === "Opening Statements" ? t.opening :
+                           phase.name === "Verdict" ? t.verdict : phase.name;
+        return (
+          <div key={pi} className="fade-up mb-16">
+            <div className="phase-header">
+              <h3>{phaseLabel}</h3>
+              {phase.time != null && (
+                <span className="mono text-muted text-xs">{phase.time.toFixed(1)}{t.seconds}</span>
+              )}
+            </div>
+            {phase.responses.map((resp, ri) => {
+              const style = getParticipantStyle(resp.name);
+              const indent = ri % 2 === 1 ? '48px' : '0';
+              return (
+                <div key={ri} className="response-card" style={{ borderLeft: `3px solid ${style.color}`, marginLeft: indent }}>
+                  <div className="response-header">
+                    <span className="color-dot" style={{ background: style.color }} />
+                    <span style={{ color: style.color }}>{resp.name}</span>
+                  </div>
+                  <div className="response-text" dangerouslySetInnerHTML={{ __html: (typeof marked !== 'undefined' && marked.parse) ? marked.parse(resp.text || '') : (resp.text || '') }} />
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* Loading cards for in-progress phase */}
+      {!isComplete && currentPhaseIndex != null && !allPhases[currentPhaseIndex || 0] && (
+        <div className="card" style={{ textAlign: 'center' }}>
+          <LoadingDots />
+        </div>
+      )}
+
+      {isComplete && (
+        <div className="summary-panel fade-up">
+          <h3 className="text-center text-gold mb-16">{t.summaryTitle}</h3>
+          <div className="summary-grid">
+            <div className="summary-item">
+              <div className="summary-value">{totalCalls}</div>
+              <div className="summary-label">{t.totalCalls}</div>
+            </div>
+            <div className="summary-item">
+              <div className="summary-value">{allPhases.length}</div>
+              <div className="summary-label">{t.totalPhases}</div>
+            </div>
+            <div className="summary-item">
+              <div className="summary-value">{totalTime.toFixed(1)}{t.seconds}</div>
+              <div className="summary-label">{t.totalTime}</div>
+            </div>
+          </div>
+          <div className="text-center" style={{ marginTop: '16px' }}>
+            <button className="btn-secondary btn-small" onClick={() => downloadDiscussion(setup, allPhases, tokens, totalTime, totalCalls, config, attachedDoc, t)}>
+              ↓ {t.downloadDiscussion}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div ref={endRef} />
+    </div>
+  );
+}
+
+// ============ MAIN APP ============
+function App() {
+  const [lang, setLang] = useState('en');
+  const [view, setView] = useState('setup'); // setup | debate
+  const [proxyOk, setProxyOk] = useState(null);
+  const isDemo = isDemoMode();
+
+  // Provider config
+  const [config, setConfig] = useState({
+    provider: 'anthropic',
+    apiKey: '',
+    model: '',
+    baseUrl: '',
+  });
+
+  // Debate setup
+  const [setup, setSetup] = useState({
+    topic: '',
+    participants: [
+      { name: '', perspective: '' },
+      { name: '', perspective: '' },
+    ],
+    moderator: { name: '', perspective: '' },
+    rounds: 2,
+  });
+
+  // Attached document: { name, type, content (text or base64), mimeType }
+  const [attachedDoc, setAttachedDoc] = useState(null);
+
+  // Debate state
+  const [phases, setPhases] = useState([]);
+  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(null);
+  const [debateStatus, setDebateStatus] = useState('idle');
+  const [tokens, setTokens] = useState({ input: 0, output: 0 });
+  const [totalTime, setTotalTime] = useState(0);
+
+  const t = T[lang];
+
+  // Check proxy on mount (live mode only)
+  useEffect(() => {
+    if (!isDemo) {
+      fetch(`${PROXY_BASE}/api/health`)
+        .then(r => r.json())
+        .then(d => setProxyOk(d.status === 'ok'))
+        .catch(() => setProxyOk(false));
+    }
+  }, []);
+
+  // ============ BUILD PROMPTS ============
+  const buildSystemPrompt = (name, perspective, role, topic) => {
+    const langInst = `MANDATORY LANGUAGE RULE (applies to your ENTIRE response, including conclusions and summaries): You MUST write in the SAME LANGUAGE as the discussion topic below. The topic is: "${topic}". Detect its language and use that language for every single sentence you write. Do NOT switch to English or any other language at any point.`;
+    const factuality = "- FACTUALITY: Do not fabricate citations, case law, statistics, studies, names of institutions, or any specific reference. If you reference something external that is not in the provided document, mark it with [to verify]. When a reference document is provided, ground your arguments in its actual content — cite specific articles, sections, or passages from it.";
+    // Include attached text document in system prompt context
+    let docContext = '';
+    if (attachedDoc && attachedDoc.type === 'text') {
+      docContext = `\n\n--- REFERENCE DOCUMENT (${attachedDoc.name}) ---\n${attachedDoc.content}\n--- END DOCUMENT ---\n\n- Use the reference document above as context for your arguments. Cite specific parts when relevant.`;
+    } else if (attachedDoc && attachedDoc.type === 'image') {
+      docContext = `\n\n- An image document (${attachedDoc.name}) has been provided as context. It will be included in the conversation. Refer to its content in your arguments when relevant.`;
+    }
+    const styleRules = `WRITING STYLE:
+- Write in a natural, conversational tone — as you would in a real professional discussion.
+- Do NOT format your entire response as bullet lists. Use flowing prose with occasional emphasis (bold for key terms only).
+- You may use a short list (2-3 items) only when enumerating concrete actions or requirements.
+- Do NOT end with a "Conclusion" or "In summary" section. Your last paragraph should be your final substantive point, not a recap.
+- Be consistent in formatting across rounds.`;
+
+    if (role === 'moderator') {
+      return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are the moderator of this structured multi-perspective discussion on:\n"${topic}"${docContext}\nYour task:\n1. Evaluate argument EVOLUTION: did participants develop their thinking across rounds, or did they repeat themselves?\n2. Evaluate ENGAGEMENT: did they address each other's specific points?\n3. Identify the single strongest argument and the single weakest across all participants.\n4. Note any logical fallacies, unsupported claims, or missed opportunities.\n5. Deliver a clear verdict on which perspective was more convincing and why. Avoid diplomatic "both are right" conclusions unless truly justified by the evidence.\n- Maximum 400 words\n${factuality}\n${styleRules}`;
+    }
+    return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are participating in a structured multi-perspective discussion on:\n"${topic}"${docContext}\nCRITICAL RULES:\n- You MUST directly address at least one specific argument made by another participant. Quote or paraphrase their point, then respond to it.\n- Do NOT repeat your own previous arguments. If you already made a point in an earlier round, refer to it briefly and build upon it with new reasoning or evidence.\n- Identify where you agree or disagree with others and explain why.\n- Be intellectually honest: concede valid points, but do NOT default to agreement. Challenge assumptions, identify gaps, and push back when you see weaknesses — even if the other participant's point has merit. A productive discussion needs tension.\n- Structure: 1 point of response to others + 1-2 new or evolved arguments.\n- Maximum 300 words.\n${factuality}\n${styleRules}`;
+  };
+
+  // Build messages with optional image attachment for the first user message
+  const buildMessages = (messages) => {
+    if (!attachedDoc || attachedDoc.type !== 'image') return messages;
+    // Only attach image to the first message of the conversation
+    const first = messages[0];
+    if (!first || first.role !== 'user') return messages;
+    // Extract base64 data from data URL
+    const base64 = attachedDoc.content.split(',')[1];
+    const mediaType = attachedDoc.mimeType;
+    if (config.provider === 'anthropic') {
+      return [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: first.content },
+        ],
+      }, ...messages.slice(1)];
+    }
+    // OpenAI / OpenAI-compatible format
+    return [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: attachedDoc.content } },
+        { type: 'text', text: first.content },
+      ],
+    }, ...messages.slice(1)];
+  };
+
+  const callAPI = async (systemPrompt, messages) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200000); // 20 minutes
+    let res;
+    try {
+      res = await fetch(`${PROXY_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          provider: config.provider,
+          api_key: config.apiKey,
+          model: config.model,
+          system: systemPrompt,
+          messages: buildMessages(messages),
+          ...(config.provider === 'openai-compatible' ? { base_url: config.baseUrl } : {}),
+        }),
+      });
+    } catch (e) {
+      clearTimeout(timeoutId);
+      if (e.name === 'AbortError') throw new Error('Request timed out (20 min). Try a smaller model or shorter prompt.');
+      throw e;
+    }
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  };
+
+  // ============ BUILD CUMULATIVE TRANSCRIPT ============
+  const buildTranscript = (phases) => {
+    return phases.map(phase => {
+      const header = `--- ${phase.name} ---`;
+      const body = phase.responses.map(r => `${r.name}:\n${r.text}`).join('\n\n');
+      return `${header}\n\n${body}`;
+    }).join('\n\n');
+  };
+
+  // ============ RUN LIVE DEBATE ============
+  const runLiveDebate = async () => {
+    setView('debate');
+    setPhases([]);
+    setTokens({ input: 0, output: 0 });
+    setTotalTime(0);
+    setDebateStatus('running');
+    const startTime = performance.now();
+    let cumTokens = { input: 0, output: 0 };
+    const allPhases = [];
+
+    const addTokens = (usage) => {
+      cumTokens = {
+        input: cumTokens.input + (usage?.input_tokens || 0),
+        output: cumTokens.output + (usage?.output_tokens || 0),
+      };
+      setTokens({ ...cumTokens });
+    };
+
+    try {
+      // Phase 0: Moderator introduction (sequential)
+      const introStart = performance.now();
+      setCurrentPhaseIndex(0);
+      const modIntroSys = buildSystemPrompt(setup.moderator.name, setup.moderator.perspective, 'moderator', setup.topic);
+      const participantsList = setup.participants.map(p => `- ${p.name}: ${p.perspective}`).join('\n');
+      const introResult = await callAPI(modIntroSys, [{
+        role: 'user',
+        content: `You are opening this discussion. Briefly introduce the topic and present each participant:\n\n${participantsList}\n\nKeep it concise (max 150 words). Set the stage for a structured, multi-perspective discussion.`,
+      }]);
+      addTokens(introResult.usage);
+      const introPhase = {
+        name: t.introTitle || "Introduction",
+        type: "sequential",
+        time: (performance.now() - introStart) / 1000,
+        responses: [{ name: setup.moderator.name, text: introResult.text }],
+      };
+      allPhases.push(introPhase);
+      setPhases([...allPhases]);
+
+      // Phase 1: Opening statements (parallel — no context needed)
+      const phaseStart = performance.now();
+      setCurrentPhaseIndex(allPhases.length);
+      const openingPromises = setup.participants.map(p => {
+        const sys = buildSystemPrompt(p.name, p.perspective, 'participant', setup.topic);
+        return callAPI(sys, [{ role: 'user', content: `Present your opening statement on: "${setup.topic}"` }]);
+      });
+      const openingResults = await Promise.all(openingPromises);
+      const openingPhase = {
+        name: t.openingTitle || "Opening Statements",
+        type: "parallel",
+        time: (performance.now() - phaseStart) / 1000,
+        responses: openingResults.map((r, i) => {
+          addTokens(r.usage);
+          return { name: setup.participants[i].name, text: r.text };
+        }),
+      };
+      allPhases.push(openingPhase);
+      setPhases([...allPhases]);
+
+      // Phase 2..N: Discussion rounds (sequential within each round)
+      // Each participant receives the full cumulative transcript before responding
+      for (let round = 1; round <= setup.rounds; round++) {
+        const roundStart = performance.now();
+        setCurrentPhaseIndex(allPhases.length);
+        const roundResponses = [];
+
+        for (let pi = 0; pi < setup.participants.length; pi++) {
+          const p = setup.participants[pi];
+          const sys = buildSystemPrompt(p.name, p.perspective, 'participant', setup.topic);
+
+          // Build cumulative transcript: all previous phases + responses so far in this round
+          let transcript = buildTranscript(allPhases);
+          if (roundResponses.length > 0) {
+            const currentRoundText = roundResponses.map(r => `${r.name}:\n${r.text}`).join('\n\n');
+            transcript += `\n\n--- Round ${round} (in progress) ---\n\n${currentRoundText}`;
+          }
+
+          const userMsg = `Here is the full discussion so far:\n\n${transcript}\n\nIt is now Round ${round}. Read the previous arguments carefully. You MUST:\n1. Pick the strongest or most problematic argument from another participant and respond to it specifically (agree, counter, or refine).\n2. Do NOT restate points you already made — evolve your position.\n3. If you find yourself agreeing with the other side on a point, say so openly.\nRespond now from your perspective.`;
+          const result = await callAPI(sys, [{ role: 'user', content: userMsg }]);
+          addTokens(result.usage);
+          roundResponses.push({ name: p.name, text: result.text });
+
+          // Update UI progressively: show responses as they come in
+          const inProgressPhase = {
+            name: `Round ${round}`,
+            type: "sequential",
+            time: (performance.now() - roundStart) / 1000,
+            responses: [...roundResponses],
+          };
+          setPhases([...allPhases, inProgressPhase]);
+        }
+
+        const roundPhase = {
+          name: `Round ${round}`,
+          type: "sequential",
+          time: (performance.now() - roundStart) / 1000,
+          responses: roundResponses,
+        };
+        allPhases.push(roundPhase);
+        setPhases([...allPhases]);
+      }
+
+      // Final phase: Verdict (moderator reads everything)
+      setDebateStatus('verdict');
+      const verdictStart = performance.now();
+      setCurrentPhaseIndex(allPhases.length);
+
+      const fullTranscript = buildTranscript(allPhases);
+      const modSys = buildSystemPrompt(setup.moderator.name, setup.moderator.perspective, 'moderator', setup.topic);
+      const verdictResult = await callAPI(modSys, [{
+        role: 'user',
+        content: `Here is the complete discussion transcript:\n\n${fullTranscript}\n\nDeliver your verdict and analysis.`,
+      }]);
+      addTokens(verdictResult.usage);
+
+      const verdictPhase = {
+        name: t.verdictTitle || "Verdict",
+        type: "sequential",
+        time: (performance.now() - verdictStart) / 1000,
+        responses: [{ name: setup.moderator.name, text: verdictResult.text }],
+      };
+      allPhases.push(verdictPhase);
+      setPhases([...allPhases]);
+
+    } catch (err) {
+      allPhases.push({
+        name: "Error",
+        type: "sequential",
+        time: 0,
+        responses: [{ name: "System", text: `Error: ${err.message}` }],
+      });
+      setPhases([...allPhases]);
+    }
+
+    setTotalTime((performance.now() - startTime) / 1000);
+    setDebateStatus('complete');
+  };
+
+  // ============ RUN DEMO ============
+  const runDemo = async () => {
+    setView('debate');
+    setPhases([]);
+    setTokens({ input: 0, output: 0 });
+    setTotalTime(0);
+    setDebateStatus('running');
+    const startTime = performance.now();
+    let cumTokens = { input: 0, output: 0 };
+
+    for (let pi = 0; pi < DEMO_DATA.phases.length; pi++) {
+      const phase = DEMO_DATA.phases[pi];
+      setCurrentPhaseIndex(pi);
+
+      if (phase.name === "Verdict") setDebateStatus('verdict');
+
+      // Simulate delay
+      await new Promise(r => setTimeout(r, 2000 + Math.random() * 1500));
+
+      // Simulate token counts
+      phase.responses.forEach(resp => {
+        const words = resp.text.split(/\s+/).length;
+        cumTokens = {
+          input: cumTokens.input + Math.round(words * 1.8),
+          output: cumTokens.output + Math.round(words * 1.3),
+        };
+      });
+      setTokens({ ...cumTokens });
+      setPhases(prev => [...prev, phase]);
+    }
+
+    setTotalTime((performance.now() - startTime) / 1000);
+    setDebateStatus('complete');
+  };
+
+  const resetDebate = () => {
+    setView('setup');
+    setPhases([]);
+    setDebateStatus('idle');
+    setTokens({ input: 0, output: 0 });
+    setTotalTime(0);
+    setCurrentPhaseIndex(null);
+  };
+
+  // ============ RENDER ============
+  return (
+    <div>
+      <LanguageToggle lang={lang} setLang={setLang} />
+      <div className="container">
+        <header className="text-center" style={{ margin: '40px 0 32px' }}>
+          <h1>{t.title}</h1>
+          <p className="text-secondary" style={{ fontStyle: 'italic' }}>{t.subtitle}</p>
+        </header>
+
+        {/* DEMO MODE */}
+        {isDemo && view === 'setup' && (
+          <div className="demo-banner fade-up">
+            <p>{t.demoBannerText}</p>
+            <div className="btn-row">
+              <button className="btn-primary" onClick={runDemo}>{t.playDemo}</button>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                <button className="btn-secondary">{t.viewOnGithub}</button>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* LIVE MODE SETUP */}
+        {!isDemo && view === 'setup' && (
+          <div>
+            {proxyOk === false && (
+              <div className="warning-box">
+                <span className="status-indicator"><span className="status-dot fail" /></span>
+                {' '}{t.proxyWarning}
+              </div>
+            )}
+            <ProviderConfig config={config} setConfig={setConfig} lang={lang} />
+            <DebateSetup setup={setup} setSetup={setSetup} attachedDoc={attachedDoc} setAttachedDoc={setAttachedDoc} lang={lang} />
+            <LaunchSection setup={setup} config={config} onStart={runLiveDebate} lang={lang} />
+          </div>
+        )}
+
+        {/* DEBATE VIEW */}
+        {view === 'debate' && (
+          <div>
+            <DebateView
+              phases={phases}
+              currentPhaseIndex={currentPhaseIndex}
+              status={debateStatus}
+              tokens={tokens}
+              totalTime={totalTime}
+              setup={isDemo ? { topic: DEMO_DATA.topic, participants: DEMO_DATA.participants, moderator: DEMO_DATA.moderator, rounds: DEMO_DATA.rounds } : setup}
+              config={config}
+              attachedDoc={attachedDoc}
+              lang={lang}
+              isDemo={isDemo}
+            />
+            {debateStatus === 'complete' && (
+              <div className="text-center mt-24">
+                <button className="btn-primary" onClick={resetDebate}>
+                  {isDemo ? t.playDemo : t.newDebate}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <footer className="credits">
+          {t.version} — {t.credits} <a href="https://ai-know.pro" target="_blank" rel="noopener noreferrer">Paolo Dalprato</a> {t.creditsAnd} <a href="https://claude.ai" target="_blank" rel="noopener noreferrer">Claude</a> — <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+// ============ RENDER ============
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
