@@ -21,7 +21,9 @@ Works with cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, and othe
 ### 3 Steps
 
 ```bash
-# 1. Clone the repository
+# 1. Download the project
+#    Option A: click the green "Code" button above → "Download ZIP", then unzip
+#    Option B: clone with git
 git clone https://github.com/paolodalprato/agent-discussion-arena.git
 cd agent-discussion-arena
 
