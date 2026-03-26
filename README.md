@@ -18,22 +18,44 @@ Works with cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, and othe
 - A modern browser (Chrome, Firefox, Edge, Safari)
 - An API key for a cloud provider, OR a local model server (Ollama, LM Studio)
 
-### 3 Steps
+### Installation
 
+**Step 1 — Download the project**
+
+Choose one of these two options:
+
+- **Option A (no git required):** click the green **Code** button at the top of this page, then **Download ZIP**. Unzip the file into a folder of your choice (e.g. `Documents`, `Desktop`, or any folder you prefer).
+
+- **Option B (with git):** open a terminal and run:
+  ```bash
+  git clone https://github.com/paolodalprato/agent-discussion-arena.git
+  ```
+  This creates an `agent-discussion-arena` folder in your current directory.
+
+**Step 2 — Start the proxy server**
+
+Open a terminal window:
+- **Windows:** press `Win + R`, type `cmd`, press Enter
+- **macOS:** open Terminal (from Applications → Utilities)
+- **Linux:** open your terminal emulator
+
+Navigate to the project folder. For example, if you unzipped it on your Desktop:
 ```bash
-# 1. Download the project
-#    Option A: click the green "Code" button above → "Download ZIP", then unzip
-#    Option B: clone with git
-git clone https://github.com/paolodalprato/agent-discussion-arena.git
-cd agent-discussion-arena
-
-# 2. Start the proxy server
-python proxy-server.py        # Windows
-python3 proxy-server.py       # macOS / Linux
-
-# 3. Open in your browser
-# Navigate to http://localhost:8080
+cd Desktop/agent-discussion-arena       # macOS / Linux
+cd Desktop\agent-discussion-arena       # Windows
 ```
+
+Start the server:
+```bash
+python proxy-server.py                  # Windows
+python3 proxy-server.py                 # macOS / Linux
+```
+
+You should see a banner confirming the server is running. Keep this terminal window open.
+
+**Step 3 — Open in your browser**
+
+Navigate to **http://localhost:8080** — the application is ready to use.
 
 That's it. No dependencies, no build step, no Docker.
 
