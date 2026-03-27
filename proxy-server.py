@@ -3,6 +3,7 @@
 Agent Discussion Arena — Local Proxy Server
 Routes AI API calls to Anthropic, OpenAI, or OpenAI-compatible providers.
 Uses only Python standard library. Binds to 127.0.0.1 only.
+Optional: install pymupdf4llm for enhanced PDF text extraction.
 """
 
 import json
@@ -10,11 +11,23 @@ import os
 import signal
 import ssl
 import sys
+import tempfile
 import threading
 import urllib.request
 import urllib.error
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler, HTTPServer
+
+# ============ OPTIONAL: pymupdf4llm ============
+# Enhanced PDF text extraction. Install with: pip install pymupdf4llm
+# If not installed, the frontend falls back to browser-based pdfjs extraction.
+try:
+    import pymupdf4llm
+    HAS_PYMUPDF4LLM = True
+    sys.stderr.write("[proxy] pymupdf4llm available — enhanced PDF extraction enabled\n")
+except ImportError:
+    HAS_PYMUPDF4LLM = False
+    sys.stderr.write("[proxy] pymupdf4llm not installed — PDF extraction will use browser-side pdfjs\n")
 
 # ============ SSL CONTEXT ============
 # Windows Python sometimes fails certificate verification.
@@ -95,7 +108,7 @@ def call_anthropic(api_key, model, system_prompt, messages):
     }
     payload = {
         "model": model,
-        "max_tokens": 2048,
+        "max_tokens": 4096,
         "system": system_prompt,
         "messages": messages,
     }
@@ -111,7 +124,7 @@ def call_openai(api_key, model, system_prompt, messages, base_url=None):
     all_messages = [{"role": "system", "content": system_prompt}] + messages
     payload = {
         "model": model,
-        "max_tokens": 2048,
+        "max_tokens": 4096,
         "messages": all_messages,
     }
     return _do_request(url, headers, payload, provider="openai")
@@ -240,7 +253,13 @@ class ProxyHandler(SimpleHTTPRequestHandler):
         path = parsed.path
 
         if path == "/api/health":
-            send_json(self, {"status": "ok", "server": "agent-discussion-arena-proxy"})
+            send_json(self, {
+                "status": "ok",
+                "server": "agent-discussion-arena-proxy",
+                "capabilities": {
+                    "pymupdf4llm": HAS_PYMUPDF4LLM,
+                },
+            })
             return
 
         if path == "/api/models":
@@ -266,6 +285,35 @@ class ProxyHandler(SimpleHTTPRequestHandler):
             return
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+        if path == "/api/extract-pdf":
+            if not HAS_PYMUPDF4LLM:
+                send_error(self, "pymupdf4llm not installed", 501)
+                return
+            content_length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(content_length)
+            tmp_path = None
+            try:
+                # Write PDF bytes to a temp file for pymupdf4llm
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                    tmp.write(raw)
+                    tmp_path = tmp.name
+                md_text = pymupdf4llm.to_markdown(tmp_path)
+                send_json(self, {
+                    "text": md_text,
+                    "method": "pymupdf4llm",
+                    "text_bytes": len(md_text.encode("utf-8")),
+                })
+            except Exception as e:
+                sys.stderr.write(f"[proxy] PDF extraction error: {e}\n")
+                send_error(self, f"PDF extraction failed: {e}")
+            finally:
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+            return
 
         if path == "/api/chat":
             content_length = int(self.headers.get("Content-Length", 0))
@@ -347,6 +395,13 @@ def main():
     print("│  Open the URL above in your browser.                 │")
     print("│  API keys are sent to providers only,                │")
     print("│  never logged or stored by this proxy.               │")
+    if HAS_PYMUPDF4LLM:
+        print("│                                                      │")
+        print("│  ✓ pymupdf4llm: enhanced PDF extraction available     │")
+    else:
+        print("│                                                      │")
+        print("│  ○ pymupdf4llm: not installed (optional)              │")
+        print("│    pip install pymupdf4llm for better PDF support     │")
     print("│                                                      │")
     print("│  Press Ctrl+C to stop the server.                    │")
     print("└──────────────────────────────────────────────────────┘")

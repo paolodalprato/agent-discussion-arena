@@ -18,6 +18,9 @@ Works with cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, and othe
 - A modern browser (Chrome, Firefox, Edge, Safari)
 - An API key for a cloud provider, OR a local model server (Ollama, LM Studio)
 
+**Optional but recommended:**
+- **pymupdf4llm** — for significantly better PDF text extraction. Install with `pip install pymupdf4llm`. Without it, ADA uses browser-based pdfjs extraction, which works but loses document structure (headings, tables, multi-column layouts). See [Document Upload](#document-upload) for details.
+
 ### Installation
 
 **Step 1 — Download the project**
@@ -230,6 +233,21 @@ You can attach **one document** to provide shared context for all participants:
 
 When a document is attached, participants are instructed to ground their arguments in its content and cite specific parts.
 
+### PDF extraction methods
+
+ADA supports two PDF extraction methods. When you upload a PDF, it automatically uses the best available method:
+
+| Method | How to enable | Quality | Best for |
+|--------|--------------|---------|----------|
+| **pymupdf4llm** | `pip install pymupdf4llm` | Preserves headings, tables, multi-column layout as Markdown | Academic papers, structured reports, technical documents |
+| **pdfjs** (default) | Built-in, no install needed | Basic text extraction, loses structure | Simple text-heavy PDFs |
+
+After uploading a PDF, the interface shows which extraction method was used and the size of the extracted text. You can **download the extracted text** to verify what the participants will actually see — this is especially useful for complex documents where you want to check that tables and structure were preserved correctly.
+
+**Why this matters:** The extracted text is included in every API call for every participant turn. With 3 participants and 2 rounds, that's ~10 API calls each containing the full document text. Better extraction means each participant works with higher-quality context, which directly improves the discussion quality.
+
+> **Note:** pymupdf4llm runs entirely on your local machine — no data is sent to external services. It uses the same local proxy server that handles API routing.
+
 ## Security & Privacy
 
 - **API keys** live only in browser memory (React state) — never written to disk, never logged
@@ -267,6 +285,16 @@ After updating, if you see the old UI:
 - **Hard refresh**: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (macOS)
 - Or open in an **incognito/private window**
 
+### PDF extraction looks broken or incomplete
+
+If the extracted text from your PDF is missing structure (tables appear as scattered numbers, headings are lost, multi-column text is jumbled):
+
+```bash
+pip install pymupdf4llm
+```
+
+Then restart the proxy server. ADA will automatically use pymupdf4llm for PDF extraction, which preserves document structure as Markdown. You can verify the result by clicking **Download extracted text** after uploading a PDF.
+
 ### Ollama connection issues
 
 Make sure Ollama is running (`ollama serve`) and the model is pulled:
@@ -290,7 +318,8 @@ ollama pull gemma3:27b   # Pull a model if needed
 - **Backend**: Python standard library only (http.server)
 - **Styling**: Custom CSS, DM Sans / DM Mono fonts
 - **Markdown**: marked.js for rendering responses
-- **PDF**: pdf.js for text extraction
+- **PDF (browser)**: pdf.js for basic text extraction
+- **PDF (enhanced, optional)**: pymupdf4llm for structure-preserving Markdown extraction
 
 ## License
 

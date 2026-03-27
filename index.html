@@ -401,6 +401,11 @@ const T = {
     documentAttached: "Document attached",
     removeDocument: "Remove",
     documentTooLarge: "File too large (max 500 KB for text, 5 MB for images)",
+    extractedWith: "Extracted with",
+    extractedTextSize: "text",
+    downloadExtractedText: "Download extracted text",
+    pdfjsNote: "Basic extraction (pdfjs) — install pymupdf4llm for better results with complex PDFs",
+    pymupdfNote: "Enhanced extraction (pymupdf4llm)",
     participants: "Participants",
     name: "Name",
     namePlaceholder: "Participant name",
@@ -475,6 +480,11 @@ const T = {
     documentAttached: "Documento allegato",
     removeDocument: "Rimuovi",
     documentTooLarge: "File troppo grande (max 500 KB per testo, 5 MB per immagini)",
+    extractedWith: "Estratto con",
+    extractedTextSize: "testo",
+    downloadExtractedText: "Scarica testo estratto",
+    pdfjsNote: "Estrazione base (pdfjs) \u2014 installa pymupdf4llm per risultati migliori con PDF complessi",
+    pymupdfNote: "Estrazione avanzata (pymupdf4llm)",
     participants: "Partecipanti",
     name: "Nome",
     namePlaceholder: "Nome partecipante",
@@ -768,8 +778,30 @@ function ProviderConfig({ config, setConfig, lang }) {
 // ============ FILE READER ============
 const TEXT_EXTENSIONS = ['txt', 'md', 'csv', 'json', 'xml', 'html', 'log', 'tsv'];
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const MAX_TEXT_SIZE = 500 * 1024; // 500 KB
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+// Try server-side PDF extraction via pymupdf4llm (if available)
+async function tryServerPdfExtraction(file) {
+  try {
+    const arrayBuf = await file.arrayBuffer();
+    const resp = await fetch('/api/extract-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/pdf' },
+      body: arrayBuf,
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.error) return null;
+    return {
+      name: file.name,
+      type: 'text',
+      mimeType: 'application/pdf',
+      content: data.text,
+      extractionMethod: 'pymupdf4llm',
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function readUploadedFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
@@ -778,14 +810,14 @@ async function readUploadedFile(file) {
   const isText = TEXT_EXTENSIONS.includes(ext) || file.type.startsWith('text/');
 
   if (isImage) {
-    if (file.size > MAX_IMAGE_SIZE) throw new Error('TOO_LARGE');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve({
         name: file.name,
         type: 'image',
         mimeType: file.type,
-        content: reader.result, // data:image/...;base64,...
+        content: reader.result,
+        extractionMethod: 'browser',
       });
       reader.onerror = reject;
       reader.readAsDataURL(file);
@@ -793,7 +825,10 @@ async function readUploadedFile(file) {
   }
 
   if (isPdf) {
-    if (file.size > MAX_TEXT_SIZE) throw new Error('TOO_LARGE');
+    // Try enhanced server-side extraction first
+    const serverResult = await tryServerPdfExtraction(file);
+    if (serverResult) return serverResult;
+    // Fallback to browser-side pdfjs
     const arrayBuf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
     let text = '';
@@ -802,11 +837,10 @@ async function readUploadedFile(file) {
       const content = await page.getTextContent();
       text += content.items.map(item => item.str).join(' ') + '\n\n';
     }
-    return { name: file.name, type: 'text', mimeType: 'application/pdf', content: text.trim() };
+    return { name: file.name, type: 'text', mimeType: 'application/pdf', content: text.trim(), extractionMethod: 'pdfjs' };
   }
 
   if (isText) {
-    if (file.size > MAX_TEXT_SIZE) throw new Error('TOO_LARGE');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve({
@@ -814,6 +848,7 @@ async function readUploadedFile(file) {
         type: 'text',
         mimeType: file.type || 'text/plain',
         content: reader.result,
+        extractionMethod: 'browser',
       });
       reader.onerror = reject;
       reader.readAsText(file);
@@ -873,8 +908,7 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
                       const doc = await readUploadedFile(file);
                       setAttachedDoc(doc);
                     } catch (err) {
-                      if (err.message === 'TOO_LARGE') alert(t.documentTooLarge);
-                      else alert('Unsupported file type');
+                      alert('Unsupported file type');
                     }
                     e.target.value = '';
                   }}
@@ -883,9 +917,31 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
               <span className="text-muted text-xs" style={{ marginLeft: '8px' }}>{t.attachDocumentDesc}</span>
             </div>
           ) : (
-            <div className="flex-row gap-8" style={{ alignItems: 'center' }}>
-              <span className="text-xs">{t.documentAttached}: <strong>{attachedDoc.name}</strong> ({attachedDoc.type === 'image' ? 'image' : `${(attachedDoc.content.length / 1024).toFixed(0)} KB text`})</span>
-              <button className="btn-secondary btn-small" onClick={() => setAttachedDoc(null)}>{t.removeDocument}</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div className="flex-row gap-8" style={{ alignItems: 'center' }}>
+                <span className="text-xs">{t.documentAttached}: <strong>{attachedDoc.name}</strong> ({attachedDoc.type === 'image' ? 'image' : `${(attachedDoc.content.length / 1024).toFixed(0)} KB ${t.extractedTextSize}`})</span>
+                <button className="btn-secondary btn-small" onClick={() => setAttachedDoc(null)}>{t.removeDocument}</button>
+              </div>
+              {attachedDoc.extractionMethod && (attachedDoc.extractionMethod === 'pymupdf4llm' || attachedDoc.extractionMethod === 'pdfjs') && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="text-muted text-xs" style={{ fontStyle: 'italic' }}>
+                    {attachedDoc.extractionMethod === 'pymupdf4llm' ? t.pymupdfNote : attachedDoc.extractionMethod === 'pdfjs' ? t.pdfjsNote : ''}
+                  </span>
+                  <a href="#" className="text-xs" style={{ color: 'var(--accent)' }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const ext = attachedDoc.extractionMethod === 'pymupdf4llm' ? '.md' : '.txt';
+                      const blob = new Blob([attachedDoc.content], { type: 'text/plain;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = attachedDoc.name.replace(/\.pdf$/i, ext);
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >{t.downloadExtractedText}</a>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1216,7 +1272,7 @@ function App() {
   // ============ BUILD PROMPTS ============
   const buildSystemPrompt = (name, perspective, role, topic) => {
     const langInst = `MANDATORY LANGUAGE RULE (applies to your ENTIRE response, including conclusions and summaries): You MUST write in the SAME LANGUAGE as the discussion topic below. The topic is: "${topic}". Detect its language and use that language for every single sentence you write. Do NOT switch to English or any other language at any point.`;
-    const factuality = "- FACTUALITY: Do not fabricate citations, case law, statistics, studies, names of institutions, or any specific reference. If you reference something external that is not in the provided document, mark it with [to verify]. When a reference document is provided, ground your arguments in its actual content — cite specific articles, sections, or passages from it.";
+    const factuality = "- FACTUALITY: Do not fabricate citations, case law, statistics, studies, names of institutions, or any specific reference. Do NOT reference external information, experiences, or data that are not in the provided document or research sources — if you cannot ground a claim in the materials provided, do not make it. When a reference document is provided, ground your arguments in its actual content — cite specific articles, sections, or passages from it.";
     // Include attached text document in system prompt context
     let docContext = '';
     if (attachedDoc && attachedDoc.type === 'text') {
