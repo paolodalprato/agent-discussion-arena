@@ -107,9 +107,13 @@ The setup screen is divided into two sections.
 | **Moderator** | A **Name** and **Perspective** for the moderator, who opens the discussion, then evaluates all arguments and delivers a verdict at the end |
 | **Discussion rounds** | Number of back-and-forth rounds (1–5). More rounds allow deeper engagement but cost more tokens. 2–3 rounds is usually the sweet spot |
 
+> **The quality of your input determines the quality of the discussion.** A vague topic like "AI in education" will produce generic arguments. A specific topic like "Should our school district adopt AI tutoring tools for math in grades 6-8, given our limited budget and teachers' resistance to new technology?" gives participants concrete material to engage with. The same applies to participant descriptions: "Education expert" produces a bland voice, while "School principal with 20 years of experience, pragmatic, skeptical of unfunded mandates, focused on protecting student data" produces a distinct, grounded perspective. Invest time in writing detailed descriptions — it's the single most impactful thing you can do to improve discussion quality. The examples below use short descriptions for brevity, but in practice you should be much more specific.
+
 ## Choosing Your AI Provider
 
 The table below lists some tested providers. Any service offering an OpenAI-compatible API will work — these are not the only options.
+
+**The choice of model significantly affects discussion quality.** More capable models produce deeper engagement with the document, more specific citations, more realistic arguments, and better adherence to the assigned perspective. In our testing, the same setup with a lightweight model produced generic, bureaucratic arguments, while a more capable model cited specific articles from the reference document, proposed concrete solutions, and maintained realistic tension between participants. If budget allows, use the best model available for important discussions — the difference is substantial.
 
 | Provider | Type | API Key | Base URL | Best For |
 |----------|------|---------|----------|----------|
@@ -268,7 +272,7 @@ After uploading a PDF, the interface shows which extraction method was used and 
 
 ## Security & Privacy
 
-- **API keys** live only in browser memory (React state) — never written to disk, never logged
+- **API keys** live only in browser memory (React state) — never written to disk, never logged. When you close the browser tab or refresh the page, the key is gone. You'll need to enter it again next time
 - **Proxy server** binds to `127.0.0.1` only — rejects any non-loopback connection
 - **No telemetry**, no analytics, no external calls except to your chosen AI provider
 - **Local models** = complete data sovereignty — nothing leaves your machine
