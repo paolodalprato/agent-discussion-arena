@@ -19,7 +19,7 @@ Works with cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, and othe
 - An API key for a cloud provider, OR a local model server (Ollama, LM Studio)
 
 **Optional but recommended:**
-- **pymupdf4llm** — for significantly better PDF text extraction. Install with `pip install pymupdf4llm`. Without it, ADA uses browser-based pdfjs extraction, which works but loses document structure (headings, tables, multi-column layouts). See [Document Upload](#document-upload) for details.
+- **[pymupdf4llm](https://pypi.org/project/pymupdf4llm/)** — for significantly better PDF text extraction. Install with `pip install pymupdf4llm`. Without it, ADA uses browser-based pdfjs extraction, which works but loses document structure (headings, tables, multi-column layouts). See [Document Upload](#document-upload) for details.
 
 ### Installation
 
@@ -27,15 +27,17 @@ Works with cloud providers (Anthropic, OpenAI, Google Gemini, DeepSeek, and othe
 
 Choose one of these two options:
 
-- **Option A (no git required):** click the green **Code** button at the top of this page, then **Download ZIP**. Unzip the file into a folder of your choice (e.g. `Documents`, `Desktop`, or any folder you prefer).
+- **Option A (no git required):** click the green **Code** button at the top of this page, then **Download ZIP**. Unzip the file into a folder of your choice (e.g. `Documents`, `Desktop`, or any folder you prefer). This will create an `agent-discussion-arena` folder containing all the project files.
 
-- **Option B (with git):** open a terminal and run:
+- **Option B (with git):** open a terminal, navigate to the folder where you want to install ADA (e.g. your Desktop), and run:
   ```bash
   git clone https://github.com/paolodalprato/agent-discussion-arena.git
   ```
-  This creates an `agent-discussion-arena` folder in your current directory.
+  This creates an `agent-discussion-arena` folder inside your current directory. **Important:** don't create the folder yourself first — the command creates it for you. If you run this inside a folder already named `agent-discussion-arena`, you'll end up with a nested folder.
 
 **Step 2 — Start the proxy server**
+
+ADA needs a small helper program called a **proxy server** running on your computer. Think of it as a translator: your browser can't talk directly to AI services (Anthropic, OpenAI, etc.), so the proxy receives requests from the browser and forwards them to the AI provider you've chosen. It runs entirely on your machine — nothing is stored or logged.
 
 Open a terminal window:
 - **Windows:** press `Win + R`, type `cmd`, press Enter
@@ -89,7 +91,7 @@ The setup screen is divided into two sections.
 
 | Field | Description |
 |-------|-------------|
-| **Provider** | Select from Anthropic, OpenAI, or OpenAI-Compatible. Use OpenAI-Compatible for Gemini, DeepSeek, Ollama, LM Studio, and any other provider with an OpenAI-compatible API |
+| **Provider** | Select from Anthropic, OpenAI, or OpenAI-Compatible. The OpenAI-Compatible option works with both cloud services (Google Gemini, DeepSeek, Mistral, and others) and local model servers (Ollama, LM Studio, and any server with an OpenAI-compatible API) |
 | **API Key** | Your provider's API key. For local models (Ollama, LM Studio) this can be left empty. The key is stored only in browser memory — never saved to disk or logged |
 | **Base URL** | Only shown for OpenAI-Compatible. Enter the provider's API endpoint (e.g. `http://localhost:11434` for Ollama) |
 | **Model** | Type a model name or click **Fetch models** to load available models from the provider|
@@ -140,6 +142,20 @@ When the discussion is complete, you have two options:
 
 - **Download (.md)** — Exports the entire discussion as a Markdown file, including the topic, all participants and their perspectives, every round of arguments, the moderator's verdict, and usage statistics (tokens, time, provider, model). Useful for archiving, sharing, or further editing.
 - **New Discussion** — Returns to the setup screen with all your configuration preserved (provider, API key, model, participants, topic, document). You can adjust any field and start a new discussion without re-entering everything from scratch.
+
+## Understanding Token Usage
+
+Every AI model processes text in units called **tokens** (roughly ¾ of a word in English, slightly less in other languages). Cloud providers charge per token, so understanding how ADA consumes them helps you control costs. With local models (Ollama, LM Studio) there are no costs, but tokens still determine how much fits in the model's context window.
+
+**How ADA uses tokens:** each participant turn is a separate API call. Every call includes the full system prompt, the entire document (if attached), the cumulative transcript of everything said so far, and the participant's instructions. This means the document is sent *with every single call*, and the transcript grows with each turn.
+
+**What drives token usage:**
+
+The biggest factor is the **attached document**. A 100 KB document is roughly 30,000–40,000 tokens. With 2 participants and 2 rounds, ADA makes about 8 API calls — each one carrying the full document. That's 240,000–320,000 input tokens just for the document alone. The second factor is the **number of participants and rounds**. The formula for total API calls is: 1 (moderator intro) + participants (opening statements) + participants × rounds (discussion) + 1 (verdict). So 2 participants with 2 rounds = 8 calls, but 3 participants with 4 rounds = 16 calls. The transcript grows with each call, so later rounds are more expensive than earlier ones.
+
+**Practical guidance:**
+
+For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
 
 ## Use Cases
 
@@ -242,9 +258,11 @@ ADA supports two PDF extraction methods. When you upload a PDF, it automatically
 | **pymupdf4llm** | `pip install pymupdf4llm` | Preserves headings, tables, multi-column layout as Markdown | Academic papers, structured reports, technical documents |
 | **pdfjs** (default) | Built-in, no install needed | Basic text extraction, loses structure | Simple text-heavy PDFs |
 
+**pdfjs** is the default because it's built into the browser — it requires no installation and works immediately. However, it was designed for *displaying* PDFs, not for extracting structured text. It flattens headings, scrambles tables, and merges multi-column text into a single stream. For simple documents this is adequate, but for anything with complex formatting (academic papers, reports with tables, multi-column layouts) the extracted text will be significantly degraded. Installing pymupdf4llm is a one-time operation (`pip install pymupdf4llm`) that dramatically improves extraction quality.
+
 After uploading a PDF, the interface shows which extraction method was used and the size of the extracted text. You can **download the extracted text** to verify what the participants will actually see — this is especially useful for complex documents where you want to check that tables and structure were preserved correctly.
 
-**Why this matters:** The extracted text is included in every API call for every participant turn. With 3 participants and 2 rounds, that's ~10 API calls each containing the full document text. Better extraction means each participant works with higher-quality context, which directly improves the discussion quality.
+**Why this matters:** The extracted text is included in every API call for every participant turn, so the quality of extraction directly affects the quality of the discussion. See [Understanding Token Usage](#understanding-token-usage) for details on how document size impacts costs.
 
 > **Note:** pymupdf4llm runs entirely on your local machine — no data is sent to external services. It uses the same local proxy server that handles API routing.
 
