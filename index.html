@@ -1036,7 +1036,7 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
 function LaunchSection({ setup, config, onStart, lang }) {
   const t = T[lang];
   const n = setup.participants.length;
-  const calls = n + (n * setup.rounds) + 1 + 1; // +1 intro, +1 style inference
+  const calls = n + (n * setup.rounds) + 1 + 1; // openings + rounds + verdict + style inference
 
   const canStart = setup.topic.trim()
     && setup.participants.every(p => p.name.trim() && p.perspective.trim())
@@ -1070,6 +1070,13 @@ function downloadDiscussion(setup, phases, tokens, totalTime, totalCalls, config
   lines.push(`*Generated with Agent Discussion Arena — ai-know.pro*`);
   lines.push(`*Provider: ${providerLabel} | Model: ${config?.model || 'unknown'}*\n`);
 
+  // Topic
+  lines.push(`## Topic\n`);
+  lines.push(`${topic}\n`);
+  if (attachedDoc) {
+    lines.push(`**Reference document:** ${attachedDoc.name} (${attachedDoc.type})\n`);
+  }
+
   // Participants summary
   const participants = setup?.participants || [];
   if (participants.length) {
@@ -1082,9 +1089,8 @@ function downloadDiscussion(setup, phases, tokens, totalTime, totalCalls, config
   if (setup?.moderator) {
     lines.push(`**Moderator:** ${setup.moderator.name} — ${setup.moderator.perspective}\n`);
   }
-  if (attachedDoc) {
-    lines.push(`**Reference document:** ${attachedDoc.name} (${attachedDoc.type})\n`);
-  }
+
+  lines.push(`> *All names, companies, and circumstances described are entirely fictional. Any resemblance to real persons or entities is purely coincidental. Participants may elaborate factual details consistent with the scenario but not explicitly stated in the topic — as a professional would when reasoning about a hypothetical case.*\n`);
 
   lines.push('---\n');
 
@@ -1453,34 +1459,10 @@ Respond ONLY with a JSON object, no markdown, no backticks:
     };
 
     try {
-      // Phase 0: Moderator introduction (sequential)
-      const introStart = performance.now();
-      setCurrentPhaseIndex(0);
-
-      // Extract a neutral topic summary programmatically — take only the first 2 sentences
-      // This avoids passing parties' positions, legal theories, or arguments to the moderator
-      const topicSentences = enrichedSetup.topic.match(/[^.!?]+[.!?]+/g) || [enrichedSetup.topic];
-      const neutralTopic = topicSentences.slice(0, 2).join(' ').trim();
-
-      const langInst = `MANDATORY: You MUST write your ENTIRE response in the SAME LANGUAGE as this text: "${enrichedSetup.topic.substring(0, 80)}". If this text is in Italian, you write in Italian. If in English, you write in English. Do NOT switch languages.`;
-      const modIntroSys = `${langInst}\n\nYou are ${enrichedSetup.moderator.name}. ${enrichedSetup.moderator.perspective}\nYou are the moderator of a structured multi-perspective discussion.`;
-      const introResult = await callAPI(modIntroSys, [{
-        role: 'user',
-        content: `The situation to discuss is:\n${neutralTopic}\n\nWrite a brief introduction that explains this situation in simple, accessible language. Describe what happened and what is at stake.\n\nDo NOT name or introduce the participants — they will introduce themselves.\nDo NOT mention specific laws, articles, or technical theories.\n\nKeep it concise (max 100 words).`,
-      }]);
-      addTokens(introResult.usage);
-      const introPhase = {
-        name: t.introTitle || "Introduction",
-        type: "sequential",
-        time: (performance.now() - introStart) / 1000,
-        responses: [{ name: enrichedSetup.moderator.name, text: introResult.text }],
-      };
-      allPhases.push(introPhase);
-      setPhases([...allPhases]);
-
       // Phase 1: Opening statements (parallel — no context needed)
+      // No moderator introduction — the topic is included in the markdown header
       const phaseStart = performance.now();
-      setCurrentPhaseIndex(allPhases.length);
+      setCurrentPhaseIndex(0);
       const openingPromises = enrichedSetup.participants.map(p => {
         const sys = buildSystemPrompt(p.name, p.perspective, 'participant', enrichedSetup.topic, p.communicationStyle);
         return callAPI(sys, [{ role: 'user', content: `Present your opening statement on: "${enrichedSetup.topic}"\n\nIMPORTANT: Present your STRONGEST single argument and your core position. Do NOT try to cover everything — you will have multiple rounds to develop your reasoning. Save your supporting arguments, counter-objections, and nuances for later rounds. A focused opening is more powerful than an exhaustive one.` }]);

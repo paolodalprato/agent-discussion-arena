@@ -80,10 +80,9 @@ That's it. No dependencies, no build step, no Docker.
 1. **You configure** the AI provider, define a moderator, then participants with their perspectives and optional communication styles
 2. **Before the discussion starts**, ADA infers communication styles for any participant or moderator that doesn't have one — this costs one API call but produces more distinct voices
 3. **The proxy** routes API calls to your chosen provider — it never stores API keys or conversation data
-4. **The moderator** opens with a neutral, accessible summary of the situation — without naming participants or previewing arguments
-5. **Each participant** argues from their assigned perspective across multiple rounds
-6. **Participants read and respond** to each other's arguments (sequential flow with full context)
-7. **The moderator** evaluates argument quality, identifies the strongest and weakest arguments, notes any gaps in the analysis, and delivers a verdict
+4. **Each participant** argues from their assigned perspective across multiple rounds
+5. **Participants read and respond** to each other's arguments (sequential flow with full context)
+6. **The moderator** evaluates argument quality, identifies the strongest and weakest arguments, notes any gaps in the analysis, and delivers a verdict
 
 ## Configuration Guide
 
@@ -157,11 +156,11 @@ Every AI model processes text in units called **tokens** (roughly ¾ of a word i
 
 **What drives token usage:**
 
-The biggest factor is the **attached document**. A 100 KB document is roughly 30,000–40,000 tokens. With 2 participants and 2 rounds, ADA makes about 9 API calls — each one carrying the full document. That's 270,000–360,000 input tokens just for the document alone. The second factor is the **number of participants and rounds**. The formula for total API calls is: 1 (style inference) + 1 (moderator intro) + participants (opening statements) + participants × rounds (discussion) + 1 (verdict). So 2 participants with 2 rounds = 9 calls, but 3 participants with 4 rounds = 18 calls. The transcript grows with each call, so later rounds are more expensive than earlier ones.
+The biggest factor is the **attached document**. A 100 KB document is roughly 30,000–40,000 tokens. With 2 participants and 2 rounds, ADA makes about 8 API calls — each one carrying the full document. That's 240,000–320,000 input tokens just for the document alone. The second factor is the **number of participants and rounds**. The formula for total API calls is: 1 (style inference) + participants (opening statements) + participants × rounds (discussion) + 1 (verdict). So 2 participants with 2 rounds = 8 calls, but 3 participants with 4 rounds = 17 calls. The transcript grows with each call, so later rounds are more expensive than earlier ones.
 
 **Practical guidance:**
 
-For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion (9 API calls) at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
+For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion (8 API calls) at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
 
 ## Use Cases
 
