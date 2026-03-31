@@ -77,11 +77,13 @@ That's it. No dependencies, no build step, no Docker.
                                               Never logged or stored
 ```
 
-1. **You configure** the AI provider and define participants with their perspectives
-2. **The proxy** routes API calls to your chosen provider — it never stores API keys or conversation data
-3. **Each participant** argues from their assigned perspective across multiple rounds
-4. **Participants read and respond** to each other's arguments (sequential flow with full context)
-5. **The moderator** evaluates argument quality and delivers a verdict
+1. **You configure** the AI provider, define a moderator, then participants with their perspectives and optional communication styles
+2. **Before the discussion starts**, ADA infers communication styles for any participant or moderator that doesn't have one — this costs one API call but produces more distinct voices
+3. **The proxy** routes API calls to your chosen provider — it never stores API keys or conversation data
+4. **The moderator** opens with a neutral, accessible summary of the situation — without naming participants or previewing arguments
+5. **Each participant** argues from their assigned perspective across multiple rounds
+6. **Participants read and respond** to each other's arguments (sequential flow with full context)
+7. **The moderator** evaluates argument quality, identifies the strongest and weakest arguments, notes any gaps in the analysis, and delivers a verdict
 
 ## Configuration Guide
 
@@ -103,11 +105,11 @@ The setup screen is divided into two sections.
 |-------|-------------|
 | **Topic** | The subject of the discussion. Be specific — the quality of the debate depends on a well-defined topic. The discussion language is automatically detected from the topic's language |
 | **Attach a document** | Optional. Upload a PDF, image, or text file to provide shared context. All participants will reference this document in their arguments |
-| **Participants** | 2 to 4 participants, each with a **Name** (their role/title) and a **Perspective** (their background, expertise, or point of view). The more specific the perspective, the more distinct the arguments |
-| **Moderator** | A **Name** and **Perspective** for the moderator, who opens the discussion, then evaluates all arguments and delivers a verdict at the end |
+| **Moderator** | A **Name** and **Perspective** for the moderator, who opens the discussion, then evaluates all arguments and delivers a verdict at the end. The moderator is defined before participants because it sets the evaluative angle of the discussion |
+| **Participants** | 2 to 4 participants, each with a **Name** (their role/title), a **Perspective** (their background, expertise, or point of view), and an optional **Communication style** (how they argue — e.g. "direct and assertive", "analytical and measured", "pragmatic and concrete"). If you leave the communication style empty, it will be inferred automatically based on the participant's role and the topic |
 | **Discussion rounds** | Number of back-and-forth rounds (1–5). More rounds allow deeper engagement but cost more tokens. 2–3 rounds is usually the sweet spot |
 
-> **The quality of your input determines the quality of the discussion.** A vague topic like "AI in education" will produce generic arguments. A specific topic like "Should our school district adopt AI tutoring tools for math in grades 6-8, given our limited budget and teachers' resistance to new technology?" gives participants concrete material to engage with. The same applies to participant descriptions: "Education expert" produces a bland voice, while "School principal with 20 years of experience, pragmatic, skeptical of unfunded mandates, focused on protecting student data" produces a distinct, grounded perspective. Invest time in writing detailed descriptions — it's the single most impactful thing you can do to improve discussion quality. The examples below use short descriptions for brevity, but in practice you should be much more specific.
+> **The quality of your input determines the quality of the discussion.** A vague topic like "AI in education" will produce generic arguments. A specific topic like "Should our school district adopt AI tutoring tools for math in grades 6-8, given our limited budget and teachers' resistance to new technology?" gives participants concrete material to engage with. The same applies to participant descriptions: "Education expert" produces a bland voice, while "School principal with 20 years of experience, pragmatic, skeptical of unfunded mandates, focused on protecting student data" produces a distinct, grounded perspective. Adding a communication style (e.g. "direct and blunt, cuts through jargon") further differentiates the voices — but even without it, ADA will infer one from the role. Invest time in writing detailed descriptions — it's the single most impactful thing you can do to improve discussion quality. The examples below use short descriptions for brevity, but in practice you should be much more specific.
 
 ## Choosing Your AI Provider
 
@@ -155,11 +157,11 @@ Every AI model processes text in units called **tokens** (roughly ¾ of a word i
 
 **What drives token usage:**
 
-The biggest factor is the **attached document**. A 100 KB document is roughly 30,000–40,000 tokens. With 2 participants and 2 rounds, ADA makes about 8 API calls — each one carrying the full document. That's 240,000–320,000 input tokens just for the document alone. The second factor is the **number of participants and rounds**. The formula for total API calls is: 1 (moderator intro) + participants (opening statements) + participants × rounds (discussion) + 1 (verdict). So 2 participants with 2 rounds = 8 calls, but 3 participants with 4 rounds = 16 calls. The transcript grows with each call, so later rounds are more expensive than earlier ones.
+The biggest factor is the **attached document**. A 100 KB document is roughly 30,000–40,000 tokens. With 2 participants and 2 rounds, ADA makes about 9 API calls — each one carrying the full document. That's 270,000–360,000 input tokens just for the document alone. The second factor is the **number of participants and rounds**. The formula for total API calls is: 1 (style inference) + 1 (moderator intro) + participants (opening statements) + participants × rounds (discussion) + 1 (verdict). So 2 participants with 2 rounds = 9 calls, but 3 participants with 4 rounds = 18 calls. The transcript grows with each call, so later rounds are more expensive than earlier ones.
 
 **Practical guidance:**
 
-For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
+For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion (9 API calls) at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
 
 ## Use Cases
 
@@ -332,7 +334,7 @@ ollama pull gemma3:27b   # Pull a model if needed
 - No streaming (responses appear when complete)
 - No session save/restore
 - No export to formats other than Markdown
-- Moderator introduction is in the same language as the topic (auto-detected)
+- Communication style inference quality depends on the model — smaller models may produce generic styles
 
 ## Tech Stack
 

@@ -455,6 +455,10 @@ const T = {
     apiKeyOptional: "Optional",
     modelPlaceholder: "Select or type a model name",
     modelPlaceholderLocal: "Select or type a model name",
+    communicationStyle: "Communication style",
+    communicationStylePlaceholder: "e.g. direct and assertive, analytical and measured, pragmatic and concrete",
+    communicationStyleOptional: "Optional — if left empty, it will be inferred automatically",
+    inferringStyles: "Inferring communication styles...",
   },
   it: {
     title: "Agent Discussion Arena",
@@ -534,6 +538,10 @@ const T = {
     apiKeyOptional: "Opzionale",
     modelPlaceholder: "Seleziona o digita un modello",
     modelPlaceholderLocal: "Seleziona o digita un modello",
+    communicationStyle: "Stile comunicativo",
+    communicationStylePlaceholder: "es. diretto e assertivo, analitico e misurato, pragmatico e concreto",
+    communicationStyleOptional: "Opzionale — se lasciato vuoto, verrà inferito automaticamente",
+    inferringStyles: "Inferenza stili comunicativi...",
   },
 };
 
@@ -553,19 +561,23 @@ const DEMO_DATA = {
     {
       name: "Alex Rivera",
       perspective: "Senior Software Developer with 15 years of experience. Pragmatic, evidence-based thinker who has seen many technology hype cycles come and go.",
+      communicationStyle: "Pragmatic and measured, grounded in personal experience",
     },
     {
       name: "Jordan Chen",
       perspective: "Tech Startup CEO who has built multiple AI-powered products. Business-oriented, focused on efficiency gains and market disruption.",
+      communicationStyle: "Direct and assertive, driven by business metrics",
     },
     {
       name: "Dr. Maria Santos",
       perspective: "Computer Science Professor specializing in software engineering and AI. Brings historical perspective on how technology has transformed — but never eliminated — programming roles.",
+      communicationStyle: "Analytical and structured, anchored in research and historical evidence",
     },
   ],
   moderator: {
     name: "The Moderator",
     perspective: "Impartial analyst focused on evaluating argument quality, identifying logical fallacies, and delivering balanced assessments.",
+    communicationStyle: "Authoritative and balanced, willing to take a clear position",
   },
   rounds: 1,
   phases: [
@@ -870,7 +882,7 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
 
   const addParticipant = () => {
     if (setup.participants.length < 4) {
-      setSetup({ ...setup, participants: [...setup.participants, { name: '', perspective: '' }] });
+      setSetup({ ...setup, participants: [...setup.participants, { name: '', perspective: '', communicationStyle: '' }] });
     }
   };
 
@@ -947,6 +959,27 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
         </div>
       </div>
 
+      <h3 className="mb-8" style={{ color: 'var(--accent)' }}>{t.moderator}</h3>
+      <div className="participant-card mb-16" style={{ borderLeftColor: 'var(--moderator-color)' }}>
+        <div className="flex-row gap-8 mb-8">
+          <span className="color-dot" style={{ background: 'var(--moderator-color)' }} />
+          <label style={{ margin: 0 }}>{t.name}</label>
+        </div>
+        <input
+          className="mb-8"
+          value={setup.moderator.name}
+          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, name: e.target.value } })}
+          placeholder={t.moderatorNamePlaceholder}
+        />
+        <label>{t.perspective}</label>
+        <textarea
+          value={setup.moderator.perspective}
+          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, perspective: e.target.value } })}
+          placeholder={t.moderatorPerspectivePlaceholder}
+          rows={2}
+        />
+      </div>
+
       <h3 className="mb-8">{t.participants}</h3>
       {setup.participants.map((p, i) => (
         <div key={i} className="participant-card" style={{ borderLeftColor: COLORS[i]?.color || 'var(--border-color)' }}>
@@ -967,37 +1000,23 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
           />
           <label>{t.perspective}</label>
           <textarea
+            className="mb-8"
             value={p.perspective}
             onChange={e => updateParticipant(i, 'perspective', e.target.value)}
             placeholder={t.perspectivePlaceholder}
             rows={2}
+          />
+          <label>{t.communicationStyle} <span className="text-muted text-xs">({t.communicationStyleOptional})</span></label>
+          <input
+            value={p.communicationStyle || ''}
+            onChange={e => updateParticipant(i, 'communicationStyle', e.target.value)}
+            placeholder={t.communicationStylePlaceholder}
           />
         </div>
       ))}
       {setup.participants.length < 4 && (
         <button className="btn-secondary btn-small mt-8 mb-16" onClick={addParticipant}>+ {t.addParticipant}</button>
       )}
-
-      <h3 className="mb-8" style={{ color: 'var(--accent)' }}>{t.moderator}</h3>
-      <div className="participant-card" style={{ borderLeftColor: 'var(--moderator-color)' }}>
-        <div className="flex-row gap-8 mb-8">
-          <span className="color-dot" style={{ background: 'var(--moderator-color)' }} />
-          <label style={{ margin: 0 }}>{t.name}</label>
-        </div>
-        <input
-          className="mb-8"
-          value={setup.moderator.name}
-          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, name: e.target.value } })}
-          placeholder={t.moderatorNamePlaceholder}
-        />
-        <label>{t.perspective}</label>
-        <textarea
-          value={setup.moderator.perspective}
-          onChange={e => setSetup({ ...setup, moderator: { ...setup.moderator, perspective: e.target.value } })}
-          placeholder={t.moderatorPerspectivePlaceholder}
-          rows={2}
-        />
-      </div>
 
       <div className="card mt-16">
         <label>{t.rounds}</label>
@@ -1017,7 +1036,7 @@ function DebateSetup({ setup, setSetup, attachedDoc, setAttachedDoc, lang }) {
 function LaunchSection({ setup, config, onStart, lang }) {
   const t = T[lang];
   const n = setup.participants.length;
-  const calls = n + (n * setup.rounds) + 1;
+  const calls = n + (n * setup.rounds) + 1 + 1; // +1 intro, +1 style inference
 
   const canStart = setup.topic.trim()
     && setup.participants.every(p => p.name.trim() && p.perspective.trim())
@@ -1240,10 +1259,10 @@ function App() {
   const [setup, setSetup] = useState({
     topic: '',
     participants: [
-      { name: '', perspective: '' },
-      { name: '', perspective: '' },
+      { name: '', perspective: '', communicationStyle: '' },
+      { name: '', perspective: '', communicationStyle: '' },
     ],
-    moderator: { name: '', perspective: '' },
+    moderator: { name: '', perspective: '', communicationStyle: '' },
     rounds: 2,
   });
 
@@ -1270,7 +1289,7 @@ function App() {
   }, []);
 
   // ============ BUILD PROMPTS ============
-  const buildSystemPrompt = (name, perspective, role, topic) => {
+  const buildSystemPrompt = (name, perspective, role, topic, communicationStyle) => {
     const langInst = `MANDATORY LANGUAGE RULE (applies to your ENTIRE response, including conclusions and summaries): You MUST write in the SAME LANGUAGE as the discussion topic below. The topic is: "${topic}". Detect its language and use that language for every single sentence you write. Do NOT switch to English or any other language at any point.`;
     const factuality = "- FACTUALITY: Do not fabricate citations, case law, statistics, studies, names of institutions, or any specific reference. Do NOT reference external information, experiences, or data that are not in the provided document or research sources — if you cannot ground a claim in the materials provided, do not make it. When a reference document is provided, ground your arguments in its actual content — cite specific articles, sections, or passages from it.";
     // Include attached text document in system prompt context
@@ -1288,9 +1307,9 @@ function App() {
 - Be consistent in formatting across rounds.`;
 
     if (role === 'moderator') {
-      return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are the moderator of this structured multi-perspective discussion on:\n"${topic}"${docContext}\nYour task:\n1. Evaluate argument EVOLUTION: did participants develop their thinking across rounds, or did they repeat themselves?\n2. Evaluate ENGAGEMENT: did they address each other's specific points?\n3. Identify the single strongest argument and the single weakest across all participants.\n4. Note any logical fallacies, unsupported claims, or missed opportunities.\n5. Deliver a clear verdict on which perspective was more convincing and why. Avoid diplomatic "both are right" conclusions unless truly justified by the evidence.\n- Maximum 400 words\n${factuality}\n${styleRules}`;
+      return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are the moderator of this structured multi-perspective discussion on:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Authoritative and structured, willing to take a clear position'}\nThis defines HOW you moderate — your tone, degree of directness, willingness to take a position vs staying neutral, formality level. Stay consistent with this style.\n\nYour task:\n1. Evaluate argument EVOLUTION: did participants develop their thinking across rounds, or did they repeat themselves?\n2. Evaluate ENGAGEMENT: did they address each other's specific points?\n3. Identify the single strongest argument and the single weakest across all participants.\n4. Note any logical fallacies, unsupported claims, or missed opportunities.\n5. Deliver a clear verdict on which perspective was more convincing and why. Avoid diplomatic "both are right" conclusions unless truly justified by the evidence.\n6. Identify at least one argument that NO participant made but SHOULD have — a gap in the discussion that a competent professional would notice. Explain why this missing argument matters.\n- Maximum 400 words\n${factuality}\n${styleRules}`;
     }
-    return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are participating in a structured multi-perspective discussion on:\n"${topic}"${docContext}\nCRITICAL RULES:\n- You MUST directly address at least one specific argument made by another participant. Quote or paraphrase their point, then respond to it.\n- Do NOT repeat your own previous arguments. If you already made a point in an earlier round, refer to it briefly and build upon it with new reasoning or evidence.\n- Identify where you agree or disagree with others and explain why.\n- Be intellectually honest: concede valid points, but do NOT default to agreement. Challenge assumptions, identify gaps, and push back when you see weaknesses — even if the other participant's point has merit. A productive discussion needs tension.\n- Structure: 1 point of response to others + 1-2 new or evolved arguments.\n- Maximum 300 words.\n${factuality}\n${styleRules}`;
+    return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are participating in a structured multi-perspective discussion on:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Professional and direct'}\nThis defines HOW you argue — sentence length, level of assertiveness, use of rhetorical questions, tendency to qualify statements, degree of formality, emotional register. It does NOT change your position or your arguments, only your voice. Stay consistent with this style throughout the entire discussion.\n\nCRITICAL RULES:\n- You MUST directly address at least one specific argument made by another participant. Quote or paraphrase their point, then respond to it.\n- Do NOT repeat your own previous arguments. If you already made a point in an earlier round, refer to it briefly and build upon it with new reasoning or evidence.\n- Identify where you agree or disagree with others and explain why.\n- Be intellectually honest: concede valid points, but do NOT default to agreement. Challenge assumptions, identify gaps, and push back when you see weaknesses — even if the other participant's point has merit. A productive discussion needs tension.\n- When you concede a point, be SPECIFIC: name the exact argument you are conceding, explain WHY it is valid, then immediately clarify what this concession does NOT affect in your overall position. A specific concession strengthens your credibility. A vague "I agree but..." wastes words.\n- Structure: 1 point of response to others + 1-2 new or evolved arguments.\n- Maximum 300 words.\n${factuality}\n${styleRules}`;
   };
 
   // Build messages with optional image attachment for the first user message
@@ -1359,6 +1378,58 @@ function App() {
     }).join('\n\n');
   };
 
+  // ============ INFER COMMUNICATION STYLES ============
+  const inferCommunicationStyles = async () => {
+    const needsInference = setup.participants.some(p => !p.communicationStyle?.trim()) || !setup.moderator.communicationStyle?.trim();
+    if (!needsInference) return setup;
+
+    const participantsToInfer = setup.participants.map((p, i) => ({
+      index: i,
+      name: p.name,
+      perspective: p.perspective,
+      needsStyle: !p.communicationStyle?.trim(),
+    }));
+
+    const prompt = `Given this discussion setup, infer communication styles for the roles that need one.
+
+Topic: "${setup.topic}"
+
+Moderator: ${setup.moderator.name} — ${setup.moderator.perspective}
+${!setup.moderator.communicationStyle?.trim() ? 'NEEDS STYLE' : 'Style: ' + setup.moderator.communicationStyle}
+
+Participants:
+${participantsToInfer.map(p => `- ${p.name}: ${p.perspective} ${p.needsStyle ? '— NEEDS STYLE' : '— Style: ' + setup.participants[p.index].communicationStyle}`).join('\n')}
+
+For each role marked NEEDS STYLE, infer a communication style (5-15 words) that captures HOW they would argue — their tone, assertiveness, formality, emotional register. Derive it from the role and context, not stereotypes.
+
+Respond ONLY with a JSON object, no markdown, no backticks:
+{"moderator": "style or null if not needed", "participants": ["style or null for each, in order"]}`;
+
+    try {
+      const result = await callAPI('You are a helpful assistant. Respond only with valid JSON, no markdown formatting.', [{ role: 'user', content: prompt }]);
+      const text = result.text.replace(/```json|```/g, '').trim();
+      const styles = JSON.parse(text);
+
+      const updatedSetup = { ...setup };
+      if (styles.moderator && !setup.moderator.communicationStyle?.trim()) {
+        updatedSetup.moderator = { ...updatedSetup.moderator, communicationStyle: styles.moderator };
+      }
+      if (styles.participants) {
+        updatedSetup.participants = setup.participants.map((p, i) => {
+          if (!p.communicationStyle?.trim() && styles.participants[i]) {
+            return { ...p, communicationStyle: styles.participants[i] };
+          }
+          return p;
+        });
+      }
+      setSetup(updatedSetup);
+      return updatedSetup;
+    } catch (e) {
+      console.warn('Style inference failed, proceeding with defaults:', e);
+      return setup;
+    }
+  };
+
   // ============ RUN LIVE DEBATE ============
   const runLiveDebate = async () => {
     setView('debate');
@@ -1369,6 +1440,9 @@ function App() {
     const startTime = performance.now();
     let cumTokens = { input: 0, output: 0 };
     const allPhases = [];
+
+    // Infer missing communication styles before starting
+    const enrichedSetup = await inferCommunicationStyles();
 
     const addTokens = (usage) => {
       cumTokens = {
@@ -1382,18 +1456,24 @@ function App() {
       // Phase 0: Moderator introduction (sequential)
       const introStart = performance.now();
       setCurrentPhaseIndex(0);
-      const modIntroSys = buildSystemPrompt(setup.moderator.name, setup.moderator.perspective, 'moderator', setup.topic);
-      const participantsList = setup.participants.map(p => `- ${p.name}: ${p.perspective}`).join('\n');
+
+      // Extract a neutral topic summary programmatically — take only the first 2 sentences
+      // This avoids passing parties' positions, legal theories, or arguments to the moderator
+      const topicSentences = enrichedSetup.topic.match(/[^.!?]+[.!?]+/g) || [enrichedSetup.topic];
+      const neutralTopic = topicSentences.slice(0, 2).join(' ').trim();
+
+      const langInst = `MANDATORY: You MUST write your ENTIRE response in the SAME LANGUAGE as this text: "${enrichedSetup.topic.substring(0, 80)}". If this text is in Italian, you write in Italian. If in English, you write in English. Do NOT switch languages.`;
+      const modIntroSys = `${langInst}\n\nYou are ${enrichedSetup.moderator.name}. ${enrichedSetup.moderator.perspective}\nYou are the moderator of a structured multi-perspective discussion.`;
       const introResult = await callAPI(modIntroSys, [{
         role: 'user',
-        content: `You are opening this discussion. Briefly introduce the topic and present each participant:\n\n${participantsList}\n\nKeep it concise (max 150 words). Set the stage for a structured, multi-perspective discussion.`,
+        content: `The situation to discuss is:\n${neutralTopic}\n\nWrite a brief introduction that explains this situation in simple, accessible language. Describe what happened and what is at stake.\n\nDo NOT name or introduce the participants — they will introduce themselves.\nDo NOT mention specific laws, articles, or technical theories.\n\nKeep it concise (max 100 words).`,
       }]);
       addTokens(introResult.usage);
       const introPhase = {
         name: t.introTitle || "Introduction",
         type: "sequential",
         time: (performance.now() - introStart) / 1000,
-        responses: [{ name: setup.moderator.name, text: introResult.text }],
+        responses: [{ name: enrichedSetup.moderator.name, text: introResult.text }],
       };
       allPhases.push(introPhase);
       setPhases([...allPhases]);
@@ -1401,9 +1481,9 @@ function App() {
       // Phase 1: Opening statements (parallel — no context needed)
       const phaseStart = performance.now();
       setCurrentPhaseIndex(allPhases.length);
-      const openingPromises = setup.participants.map(p => {
-        const sys = buildSystemPrompt(p.name, p.perspective, 'participant', setup.topic);
-        return callAPI(sys, [{ role: 'user', content: `Present your opening statement on: "${setup.topic}"` }]);
+      const openingPromises = enrichedSetup.participants.map(p => {
+        const sys = buildSystemPrompt(p.name, p.perspective, 'participant', enrichedSetup.topic, p.communicationStyle);
+        return callAPI(sys, [{ role: 'user', content: `Present your opening statement on: "${enrichedSetup.topic}"\n\nIMPORTANT: Present your STRONGEST single argument and your core position. Do NOT try to cover everything — you will have multiple rounds to develop your reasoning. Save your supporting arguments, counter-objections, and nuances for later rounds. A focused opening is more powerful than an exhaustive one.` }]);
       });
       const openingResults = await Promise.all(openingPromises);
       const openingPhase = {
@@ -1412,7 +1492,7 @@ function App() {
         time: (performance.now() - phaseStart) / 1000,
         responses: openingResults.map((r, i) => {
           addTokens(r.usage);
-          return { name: setup.participants[i].name, text: r.text };
+          return { name: enrichedSetup.participants[i].name, text: r.text };
         }),
       };
       allPhases.push(openingPhase);
@@ -1420,14 +1500,14 @@ function App() {
 
       // Phase 2..N: Discussion rounds (sequential within each round)
       // Each participant receives the full cumulative transcript before responding
-      for (let round = 1; round <= setup.rounds; round++) {
+      for (let round = 1; round <= enrichedSetup.rounds; round++) {
         const roundStart = performance.now();
         setCurrentPhaseIndex(allPhases.length);
         const roundResponses = [];
 
-        for (let pi = 0; pi < setup.participants.length; pi++) {
-          const p = setup.participants[pi];
-          const sys = buildSystemPrompt(p.name, p.perspective, 'participant', setup.topic);
+        for (let pi = 0; pi < enrichedSetup.participants.length; pi++) {
+          const p = enrichedSetup.participants[pi];
+          const sys = buildSystemPrompt(p.name, p.perspective, 'participant', enrichedSetup.topic, p.communicationStyle);
 
           // Build cumulative transcript: all previous phases + responses so far in this round
           let transcript = buildTranscript(allPhases);
@@ -1436,7 +1516,7 @@ function App() {
             transcript += `\n\n--- Round ${round} (in progress) ---\n\n${currentRoundText}`;
           }
 
-          const userMsg = `Here is the full discussion so far:\n\n${transcript}\n\nIt is now Round ${round}. Read the previous arguments carefully. You MUST:\n1. Pick the strongest or most problematic argument from another participant and respond to it specifically (agree, counter, or refine).\n2. Do NOT restate points you already made — evolve your position.\n3. If you find yourself agreeing with the other side on a point, say so openly.\nRespond now from your perspective.`;
+          const userMsg = `Here is the full discussion so far:\n\n${transcript}\n\nIt is now Round ${round}. Read the previous arguments carefully.\n\nBEFORE WRITING: Identify the single most important NEW insight you want to introduce in this round — something that has not been said yet by anyone, including yourself. Build your response around that new point. If you find yourself restating something from a previous round, stop and find a different angle.\n\nYou MUST:\n1. Pick the strongest or most problematic argument from another participant and respond to it specifically (agree, counter, or refine).\n2. Do NOT restate points you already made — evolve your position with new reasoning or evidence.\n3. If you find yourself agreeing with the other side on a point, say so openly — but be specific about what you concede and what you do not.\nRespond now from your perspective.`;
           const result = await callAPI(sys, [{ role: 'user', content: userMsg }]);
           addTokens(result.usage);
           roundResponses.push({ name: p.name, text: result.text });
@@ -1467,10 +1547,10 @@ function App() {
       setCurrentPhaseIndex(allPhases.length);
 
       const fullTranscript = buildTranscript(allPhases);
-      const modSys = buildSystemPrompt(setup.moderator.name, setup.moderator.perspective, 'moderator', setup.topic);
+      const modSys = buildSystemPrompt(enrichedSetup.moderator.name, enrichedSetup.moderator.perspective, 'moderator', enrichedSetup.topic, enrichedSetup.moderator.communicationStyle);
       const verdictResult = await callAPI(modSys, [{
         role: 'user',
-        content: `Here is the complete discussion transcript:\n\n${fullTranscript}\n\nDeliver your verdict and analysis.`,
+        content: `Here is the complete discussion transcript:\n\n${fullTranscript}\n\nDeliver your verdict and analysis. Remember: you must also identify at least one argument that NO participant made but SHOULD have — a gap in the discussion that a competent professional would notice.`,
       }]);
       addTokens(verdictResult.usage);
 
@@ -1478,7 +1558,7 @@ function App() {
         name: t.verdictTitle || "Verdict",
         type: "sequential",
         time: (performance.now() - verdictStart) / 1000,
-        responses: [{ name: setup.moderator.name, text: verdictResult.text }],
+        responses: [{ name: enrichedSetup.moderator.name, text: verdictResult.text }],
       };
       allPhases.push(verdictPhase);
       setPhases([...allPhases]);
