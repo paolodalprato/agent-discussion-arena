@@ -394,8 +394,8 @@ const T = {
     failed: "Failed",
     testing: "Testing...",
     debateSetup: "Discussion Setup",
-    topic: "Topic",
-    topicPlaceholder: "Enter the debate topic...",
+    topic: "Scenario",
+    topicPlaceholder: "Describe the scenario: the facts, the situation, what is at stake...",
     attachDocument: "Attach a document",
     attachDocumentDesc: "Optional. Participants will use it as context (PDF, TXT, MD, CSV, image).",
     documentAttached: "Document attached",
@@ -477,8 +477,8 @@ const T = {
     failed: "Fallito",
     testing: "Test in corso...",
     debateSetup: "Configurazione Discussione",
-    topic: "Argomento",
-    topicPlaceholder: "Inserisci l'argomento del debate...",
+    topic: "Scenario",
+    topicPlaceholder: "Descrivi lo scenario: i fatti, la situazione, cosa \u00e8 in gioco...",
     attachDocument: "Allega un documento",
     attachDocumentDesc: "Opzionale. I partecipanti lo useranno come contesto (PDF, TXT, MD, CSV, immagine).",
     documentAttached: "Documento allegato",
@@ -1070,8 +1070,8 @@ function downloadDiscussion(setup, phases, tokens, totalTime, totalCalls, config
   lines.push(`*Generated with Agent Discussion Arena — ai-know.pro*`);
   lines.push(`*Provider: ${providerLabel} | Model: ${config?.model || 'unknown'}*\n`);
 
-  // Topic
-  lines.push(`## Topic\n`);
+  // Scenario
+  lines.push(`## Scenario\n`);
   lines.push(`${topic}\n`);
   if (attachedDoc) {
     lines.push(`**Reference document:** ${attachedDoc.name} (${attachedDoc.type})\n`);
@@ -1296,7 +1296,7 @@ function App() {
 
   // ============ BUILD PROMPTS ============
   const buildSystemPrompt = (name, perspective, role, topic, communicationStyle) => {
-    const langInst = `MANDATORY LANGUAGE RULE (applies to your ENTIRE response, including conclusions and summaries): You MUST write in the SAME LANGUAGE as the discussion topic below. The topic is: "${topic}". Detect its language and use that language for every single sentence you write. Do NOT switch to English or any other language at any point.`;
+    const langInst = `MANDATORY LANGUAGE RULE (applies to your ENTIRE response, including conclusions and summaries): You MUST write in the SAME LANGUAGE as the discussion scenario below. The scenario is: "${topic}". Detect its language and use that language for every single sentence you write. Do NOT switch to English or any other language at any point.`;
     const factuality = "- FACTUALITY: Do not fabricate citations, case law, statistics, studies, names of institutions, or any specific reference. Do NOT reference external information, experiences, or data that are not in the provided document or research sources — if you cannot ground a claim in the materials provided, do not make it. When a reference document is provided, ground your arguments in its actual content — cite specific articles, sections, or passages from it.";
     // Include attached text document in system prompt context
     let docContext = '';
@@ -1313,9 +1313,9 @@ function App() {
 - Be consistent in formatting across rounds.`;
 
     if (role === 'moderator') {
-      return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are the moderator of this structured multi-perspective discussion on:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Authoritative and structured, willing to take a clear position'}\nThis defines HOW you moderate — your tone, degree of directness, willingness to take a position vs staying neutral, formality level. Stay consistent with this style.\n\nYour task:\n1. Evaluate argument EVOLUTION: did participants develop their thinking across rounds, or did they repeat themselves?\n2. Evaluate ENGAGEMENT: did they address each other's specific points?\n3. Identify the single strongest argument and the single weakest across all participants.\n4. Note any logical fallacies, unsupported claims, or missed opportunities.\n5. Deliver a clear verdict on which perspective was more convincing and why. Avoid diplomatic "both are right" conclusions unless truly justified by the evidence.\n6. Identify at least one argument that NO participant made but SHOULD have — a gap in the discussion that a competent professional would notice. Explain why this missing argument matters.\n- Maximum 400 words\n${factuality}\n${styleRules}`;
+      return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are the moderator of this structured multi-perspective discussion.\nScenario:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Authoritative and structured, willing to take a clear position'}\nThis defines HOW you moderate — your tone, degree of directness, willingness to take a position vs staying neutral, formality level. Stay consistent with this style.\n\nYour task:\n1. Evaluate argument EVOLUTION: did participants develop their thinking across rounds, or did they repeat themselves?\n2. Evaluate ENGAGEMENT: did they address each other's specific points?\n3. Identify the single strongest argument and the single weakest across all participants.\n4. Note any logical fallacies, unsupported claims, or missed opportunities.\n5. Deliver a clear verdict on which perspective was more convincing and why. Avoid diplomatic "both are right" conclusions unless truly justified by the evidence.\n6. Identify at least one argument that NO participant made but SHOULD have — a gap in the discussion that a competent professional would notice. Explain why this missing argument matters.\n- Maximum 400 words\n${factuality}\n${styleRules}`;
     }
-    return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are participating in a structured multi-perspective discussion on:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Professional and direct'}\nThis defines HOW you argue — sentence length, level of assertiveness, use of rhetorical questions, tendency to qualify statements, degree of formality, emotional register. It does NOT change your position or your arguments, only your voice. Stay consistent with this style throughout the entire discussion.\n\nCRITICAL RULES:\n- You MUST directly address at least one specific argument made by another participant. Quote or paraphrase their point, then respond to it.\n- Do NOT repeat your own previous arguments. If you already made a point in an earlier round, refer to it briefly and build upon it with new reasoning or evidence.\n- Identify where you agree or disagree with others and explain why.\n- Be intellectually honest: concede valid points, but do NOT default to agreement. Challenge assumptions, identify gaps, and push back when you see weaknesses — even if the other participant's point has merit. A productive discussion needs tension.\n- When you concede a point, be SPECIFIC: name the exact argument you are conceding, explain WHY it is valid, then immediately clarify what this concession does NOT affect in your overall position. A specific concession strengthens your credibility. A vague "I agree but..." wastes words.\n- Structure: 1 point of response to others + 1-2 new or evolved arguments.\n- Maximum 300 words.\n${factuality}\n${styleRules}`;
+    return `${langInst}\n\nYou are ${name}. ${perspective}\nYou are participating in a structured multi-perspective discussion.\nScenario:\n"${topic}"${docContext}\n\nYOUR COMMUNICATION STYLE: ${communicationStyle || 'Professional and direct'}\nThis defines HOW you argue — sentence length, level of assertiveness, use of rhetorical questions, tendency to qualify statements, degree of formality, emotional register. It does NOT change your position or your arguments, only your voice. Stay consistent with this style throughout the entire discussion.\n\nSCENARIO FIDELITY:\n- Your arguments must be grounded ONLY in: (1) the facts described in the scenario, (2) the reference document if provided, (3) your professional knowledge and expertise.\n- Do NOT invent facts, events, documents, communications, or circumstances that are not in the scenario. If the scenario does not mention emails, tickets, meeting minutes, or any other specific evidence, you cannot assume they exist.\n- If your argument would benefit from evidence not in the scenario, state what evidence WOULD be needed rather than inventing it. Example: "If the client had formally contested the deliveries — which is not documented in the scenario — the position would be stronger."\n\nCRITICAL RULES:\n- You MUST directly address at least one specific argument made by another participant. Quote or paraphrase their point, then respond to it.\n- Do NOT repeat your own previous arguments. If you already made a point in an earlier round, refer to it briefly and build upon it with new reasoning or evidence.\n- Identify where you agree or disagree with others and explain why.\n- Be intellectually honest: concede valid points, but do NOT default to agreement. Challenge assumptions, identify gaps, and push back when you see weaknesses — even if the other participant's point has merit. A productive discussion needs tension.\n- When you concede a point, be SPECIFIC: name the exact argument you are conceding, explain WHY it is valid, then immediately clarify what this concession does NOT affect in your overall position. A specific concession strengthens your credibility. A vague "I agree but..." wastes words.\n- Structure: 1 point of response to others + 1-2 new or evolved arguments.\n- Maximum 300 words.\n${factuality}\n${styleRules}`;
   };
 
   // Build messages with optional image attachment for the first user message
@@ -1460,12 +1460,12 @@ Respond ONLY with a JSON object, no markdown, no backticks:
 
     try {
       // Phase 1: Opening statements (parallel — no context needed)
-      // No moderator introduction — the topic is included in the markdown header
+      // No moderator introduction — the scenario is included in the markdown header
       const phaseStart = performance.now();
       setCurrentPhaseIndex(0);
       const openingPromises = enrichedSetup.participants.map(p => {
         const sys = buildSystemPrompt(p.name, p.perspective, 'participant', enrichedSetup.topic, p.communicationStyle);
-        return callAPI(sys, [{ role: 'user', content: `Present your opening statement on: "${enrichedSetup.topic}"\n\nIMPORTANT: Present your STRONGEST single argument and your core position. Do NOT try to cover everything — you will have multiple rounds to develop your reasoning. Save your supporting arguments, counter-objections, and nuances for later rounds. A focused opening is more powerful than an exhaustive one.` }]);
+        return callAPI(sys, [{ role: 'user', content: `Present your opening statement on this scenario.\n\nIMPORTANT: Present your STRONGEST single argument and your core position. Do NOT try to cover everything — you will have multiple rounds to develop your reasoning. Save your supporting arguments, counter-objections, and nuances for later rounds. A focused opening is more powerful than an exhaustive one.` }]);
       });
       const openingResults = await Promise.all(openingPromises);
       const openingPhase = {

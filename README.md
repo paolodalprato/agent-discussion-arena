@@ -1,6 +1,6 @@
 # Agent Discussion Arena
 
-**Multi-perspective AI discussions on any topic — powered by the AI provider you choose.**
+**Multi-perspective AI discussions on any scenario — powered by the AI provider you choose.**
 
 Agent Discussion Arena is a local-first tool that orchestrates structured discussions between AI agents, each arguing from a different perspective. Upload a document, define your participants, and watch the debate unfold — with a moderator that evaluates arguments and delivers a verdict.
 
@@ -102,13 +102,13 @@ The setup screen is divided into two sections.
 
 | Field | Description |
 |-------|-------------|
-| **Topic** | The subject of the discussion. Be specific — the quality of the debate depends on a well-defined topic. The discussion language is automatically detected from the topic's language |
+| **Scenario** | The starting point of the discussion: describe the facts, the situation, and what is at stake. Be specific — the quality of the debate depends on a well-defined scenario. The discussion language is automatically detected from the scenario's language |
 | **Attach a document** | Optional. Upload a PDF, image, or text file to provide shared context. All participants will reference this document in their arguments |
 | **Moderator** | A **Name** and **Perspective** for the moderator, who opens the discussion, then evaluates all arguments and delivers a verdict at the end. The moderator is defined before participants because it sets the evaluative angle of the discussion |
-| **Participants** | 2 to 4 participants, each with a **Name** (their role/title), a **Perspective** (their background, expertise, or point of view), and an optional **Communication style** (how they argue — e.g. "direct and assertive", "analytical and measured", "pragmatic and concrete"). If you leave the communication style empty, it will be inferred automatically based on the participant's role and the topic |
+| **Participants** | 2 to 4 participants, each with a **Name** (their role/title), a **Perspective** (their background, expertise, or point of view), and an optional **Communication style** (how they argue — e.g. "direct and assertive", "analytical and measured", "pragmatic and concrete"). If you leave the communication style empty, it will be inferred automatically based on the participant's role and the scenario |
 | **Discussion rounds** | Number of back-and-forth rounds (1–5). More rounds allow deeper engagement but cost more tokens. 2–3 rounds is usually the sweet spot |
 
-> **The quality of your input determines the quality of the discussion.** A vague topic like "AI in education" will produce generic arguments. A specific topic like "Should our school district adopt AI tutoring tools for math in grades 6-8, given our limited budget and teachers' resistance to new technology?" gives participants concrete material to engage with. The same applies to participant descriptions: "Education expert" produces a bland voice, while "School principal with 20 years of experience, pragmatic, skeptical of unfunded mandates, focused on protecting student data" produces a distinct, grounded perspective. Adding a communication style (e.g. "direct and blunt, cuts through jargon") further differentiates the voices — but even without it, ADA will infer one from the role. Invest time in writing detailed descriptions — it's the single most impactful thing you can do to improve discussion quality. The examples below use short descriptions for brevity, but in practice you should be much more specific.
+> **The quality of your input determines the quality of the discussion.** A vague scenario like "AI in education" will produce generic arguments. A specific scenario like "A school district with 2000 students and a $50K technology budget is evaluating whether to adopt AI tutoring tools for math in grades 6-8, facing resistance from 60% of teachers who have not received training" gives participants concrete material to engage with. The same applies to participant descriptions: "Education expert" produces a bland voice, while "School principal with 20 years of experience, pragmatic, skeptical of unfunded mandates, focused on protecting student data" produces a distinct, grounded perspective. Adding a communication style (e.g. "direct and blunt, cuts through jargon") further differentiates the voices — but even without it, ADA will infer one from the role. Invest time in writing detailed descriptions — it's the single most impactful thing you can do to improve discussion quality. The examples below use short descriptions for brevity, but in practice you should be much more specific.
 
 ## Choosing Your AI Provider
 
@@ -145,8 +145,8 @@ Select **OpenAI-Compatible**, enter the base URL for your server (Ollama, LM Stu
 
 When the discussion is complete, you have two options:
 
-- **Download (.md)** — Exports the entire discussion as a Markdown file, including the topic, all participants and their perspectives, every round of arguments, the moderator's verdict, and usage statistics (tokens, time, provider, model). Useful for archiving, sharing, or further editing.
-- **New Discussion** — Returns to the setup screen with all your configuration preserved (provider, API key, model, participants, topic, document). You can adjust any field and start a new discussion without re-entering everything from scratch.
+- **Download (.md)** — Exports the entire discussion as a Markdown file, including the scenario, all participants and their perspectives, every round of arguments, the moderator's verdict, and usage statistics (tokens, time, provider, model). Useful for archiving, sharing, or further editing.
+- **New Discussion** — Returns to the setup screen with all your configuration preserved (provider, API key, model, participants, scenario, document). You can adjust any field and start a new discussion without re-entering everything from scratch.
 
 ## Understanding Token Usage
 
@@ -160,7 +160,7 @@ The biggest factor is the **attached document**. A 100 KB document is roughly 30
 
 **Practical guidance:**
 
-For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion (8 API calls) at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the topic before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
+For cloud providers, start with **2 participants and 2 rounds** to test. This gives you a complete discussion (8 API calls) at moderate cost. Add rounds or participants only when the discussion needs more depth. If your document is large (>50 KB of extracted text), consider trimming it to the sections relevant to the scenario before uploading — the participants will produce better arguments with focused context, and you'll use fewer tokens.
 
 ## Use Cases
 
@@ -193,7 +193,7 @@ For cloud providers, start with **2 participants and 2 rounds** to test. This gi
 
 **Setup:**
 - Provider: Anthropic, Model: `claude-sonnet-4-20250514`
-- Topic: "Analysis of the Italian AI Act (DDL Intelligenza Artificiale)"
+- Scenario: "Analysis of the Italian AI Act (DDL Intelligenza Artificiale)"
 - Attached: PDF of the legislation
 - Participant 1: **Constitutional Lawyer** — "Expert in fundamental rights and constitutional law"
 - Participant 2: **Tech Industry Representative** — "VP of Innovation at a major tech company"
@@ -206,7 +206,7 @@ The participants debate the law's impact grounded in the actual text of the legi
 
 **Setup:**
 - Provider: OpenAI, Model: `gpt-4o`
-- Topic: "What does this cartoon say about educational assessment? Is standardized testing fair?"
+- Scenario: "What does this cartoon say about educational assessment? Is standardized testing fair?"
 - Attached: Image of the famous "climb that tree" cartoon showing different animals given the same test
 - Participant 1: **Education Psychologist** — "Specialist in learning differences and cognitive development"
 - Participant 2: **School Administrator** — "Principal focused on accountability and measurable outcomes"
@@ -219,7 +219,7 @@ Each participant can see the image and incorporates its message into their argum
 
 **Setup:**
 - Provider: OpenAI-Compatible, Base URL: `http://localhost:11434`, Model: `gemma3:27b`
-- Topic: "Should our company adopt a 4-day work week?"
+- Scenario: "Should our company adopt a 4-day work week?"
 - Participant 1: **Chief People Officer** — "Focused on talent retention and employee wellbeing"
 - Participant 2: **Chief Financial Officer** — "Focused on productivity metrics and bottom-line impact"
 - Participant 3: **Operations Director** — "Manages client-facing teams with tight deadlines"
@@ -232,7 +232,7 @@ Entirely private — no data leaves your machine. The discussion explores a sens
 
 **Setup:**
 - Provider: OpenAI-Compatible, Base URL: `http://localhost:1234`, Model: `qwen3:32b`
-- Topic: "Patient presents with persistent fatigue, joint pain, and intermittent low-grade fever. ANA positive, ESR elevated."
+- Scenario: "Patient presents with persistent fatigue, joint pain, and intermittent low-grade fever. ANA positive, ESR elevated."
 - Attached: PDF with lab results and patient history
 - Participant 1: **Rheumatologist** — "Specialist in autoimmune disorders"
 - Participant 2: **Internist** — "Generalist focused on differential diagnosis"
